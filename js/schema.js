@@ -1334,8 +1334,8 @@ export const DEFAULTS = {
   "stop_at_time": 10.0,
   "restart_startpoint_01": 2.05,
   "restart_startpoint_02": 2.05,
-  "vsnd_files_track_01": [],
-  "vsnd_files": "sounds/music/survival_review_victory.vsnd",
+  "vsnd_files_track_01": "sounds/custom/new_sound.vsnd",
+  "vsnd_files": "sounds/custom/new_sound.vsnd",
   "position": [
     0,
     0,
@@ -2027,7 +2027,7 @@ export const PRESETS = {
     properties: {
       type: 'csgo_mega',
       volume: 1.0,
-      vsnd_files_track_01: ['sounds/custom/sound.vsnd']
+      vsnd_files_track_01: 'sounds/custom/new_sound.vsnd'
     }
   }
 };

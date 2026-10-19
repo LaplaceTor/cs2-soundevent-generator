@@ -58,11 +58,6 @@ export const I18N = {
       tableModeRight: "右模式",
       tip: "提示：可在画布上直接拖拽控制点；双击画布空白处添加点；右键点可删除。"
     },
-    fileManager: {
-      addFile: "+ 添加音频文件",
-      normalizeNotice: "自动转换为相对 sounds/.../*.vsnd 路径",
-      dropNotice: "支持输入或粘贴相对 vsnd 路径"
-    },
     baseSelectPrompt: "-- 从 CS2 常见基类快速选择 --",
     groups: {
     "general": "通用基础 (General)",
@@ -418,11 +413,6 @@ export const I18N = {
       tableModeLeft: "Mode Left",
       tableModeRight: "Mode Right",
       tip: "Tip: Drag control points on canvas. Double-click empty canvas to add a point; right-click point to delete."
-    },
-    fileManager: {
-      addFile: "+ Add VSND File",
-      normalizeNotice: "Automatically normalizes to sounds/.../*.vsnd format",
-      dropNotice: "Type or paste relative vsnd paths"
     },
     baseSelectPrompt: "-- Quick Select Common CS2 Base --",
     groups: {

@@ -56,7 +56,8 @@ export class SoundEventState {
   setPropertyEnabled(key, enabled) {
     if (enabled) {
       this.enabledProperties.add(key);
-      if (!(key in this.propertyValues)) {
+      const cur = this.propertyValues[key];
+      if (!(key in this.propertyValues) || cur === undefined || (Array.isArray(cur) && cur.length === 0)) {
         const defaultVal = DEFAULTS[key] !== undefined ? DEFAULTS[key] : (SPECS[key]?.kind === "bool" ? false : 0);
         this.propertyValues[key] = JSON.parse(JSON.stringify(defaultVal));
       }
@@ -178,7 +179,12 @@ export class SoundEventState {
       if (Array.isArray(data.enabled)) {
         this.enabledProperties = new Set(data.enabled);
       }
-      if (data.values) this.propertyValues = data.values;
+      if (data.values) {
+        this.propertyValues = data.values;
+        if (Array.isArray(this.propertyValues["vsnd_files_track_01"]) && this.propertyValues["vsnd_files_track_01"].length === 0) {
+          this.propertyValues["vsnd_files_track_01"] = "sounds/custom/new_sound.vsnd";
+        }
+      }
       if (typeof data.includeComments === "boolean") this.includeComments = data.includeComments;
       if (data.lang) this.lang = data.lang;
       if (data.theme) this.theme = data.theme;

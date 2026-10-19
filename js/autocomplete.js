@@ -172,7 +172,7 @@ export class Kv3Autocomplete {
           insertText += '""';
           cursorOffset = -1; // inside quotes
         } else if (kind === "files") {
-          insertText += '[\n\t\t"sounds/weapons/sample.vsnd",\n\t]';
+          insertText += '[\n\t\t"sounds/custom/new_sound.vsnd",\n\t]';
         } else if (kind === "vector3") {
           insertText += '[ 0.0, 0.0, 0.0 ]';
         } else if (kind === "curve") {

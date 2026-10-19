@@ -556,51 +556,34 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 6. Audio Files list
-  if (kind === "files" || key === "vsnd_files_track_01") {
-    const list = Array.isArray(val) ? val : (val ? [val] : ["sounds/music/sound.vsnd"]);
-    const wrap = document.createElement("div");
-    wrap.className = "space-y-1.5";
+  // 6. Audio File path (vsnd_files, vsnd_files_track_01)
+  if (kind === "files" || key === "vsnd_files_track_01" || key === "vsnd_files") {
+    let filePath = "";
+    if (Array.isArray(val)) {
+      filePath = val.length > 0 ? (val[0] || "") : "sounds/custom/new_sound.vsnd";
+    } else if (typeof val === "string" && val.trim()) {
+      filePath = val.trim();
+    } else {
+      filePath = "sounds/custom/new_sound.vsnd";
+    }
 
-    list.forEach((filePath, fIdx) => {
-      const fileRow = document.createElement("div");
-      fileRow.className = "flex items-center gap-1.5";
+    const fileInput = document.createElement("input");
+    fileInput.type = "text";
+    fileInput.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
+    fileInput.value = filePath;
+    fileInput.placeholder = "sounds/custom/new_sound.vsnd";
 
-      const fileInput = document.createElement("input");
-      fileInput.type = "text";
-      fileInput.className = "flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
-      fileInput.value = filePath;
-      fileInput.placeholder = "sounds/my_sound.vsnd";
-
-      fileInput.addEventListener("change", (e) => {
-        const newList = [...list];
-        newList[fIdx] = normalizeVsndPath(e.target.value);
-        onUserEdit(newList);
-      });
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "px-2 py-1 text-xs text-gray-400 hover:text-red-500 transition-colors";
-      delBtn.textContent = "✕";
-      delBtn.addEventListener("click", () => {
-        const newList = list.filter((_, i) => i !== fIdx);
-        onUserEdit(newList);
-      });
-
-      fileRow.appendChild(fileInput);
-      fileRow.appendChild(delBtn);
-      wrap.appendChild(fileRow);
+    fileInput.addEventListener("input", (e) => {
+      onUserEdit(e.target.value);
     });
 
-    const addBtn = document.createElement("button");
-    addBtn.className = "mt-1 px-2 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors";
-    addBtn.textContent = t.fileManager.addFile;
-    addBtn.addEventListener("click", () => {
-      const newList = [...list, "sounds/custom/new_sound.vsnd"];
-      onUserEdit(newList);
+    fileInput.addEventListener("change", (e) => {
+      const normalized = normalizeVsndPath(e.target.value);
+      fileInput.value = normalized;
+      onUserEdit(normalized);
     });
 
-    wrap.appendChild(addBtn);
-    container.appendChild(wrap);
+    container.appendChild(fileInput);
     return;
   }
 
