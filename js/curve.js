@@ -174,7 +174,7 @@ export function sampleCurve(xValue, points) {
 }
 
 /**
- * Standard curve presets
+ * Standard curve preset templates
  */
 export const CURVE_PRESETS = {
   linear: [
@@ -196,6 +196,135 @@ export const CURVE_PRESETS = {
     [1000.0, 1.0, 0.0, 0.0, 1, 1]
   ]
 };
+
+/**
+ * Clean floating point numbers to avoid IEEE precision artifacts
+ */
+function roundFloat(val, maxDecimals = 3) {
+  if (val === undefined || val === null || isNaN(val)) return 0;
+  if (Number.isInteger(val)) return val;
+  const factor = Math.pow(10, maxDecimals);
+  return Math.round(val * factor) / factor;
+}
+
+/**
+ * Generate curve points dynamically based on the provided XY endpoints,
+ * rather than hardcoding static templates.
+ *
+ * @param {string} presetKey - "linear" | "smooth" | "fade_in" | "flat"
+ * @param {Array<Array<number>>} currentPoints - existing curve control points
+ * @returns {Array<Array<number>>}
+ */
+export function generateCurveFromEndpoints(presetKey, currentPoints = []) {
+  let x0 = 0.0;
+  let x1 = 1000.0;
+  let y0 = 1.0;
+  let y1 = 0.0;
+
+  if (Array.isArray(currentPoints) && currentPoints.length >= 2) {
+    const sorted = [...currentPoints].sort((a, b) => Number(a[0]) - Number(b[0]));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    x0 = Number(first[0]) || 0;
+    x1 = Number(last[0]);
+    if (isNaN(x1)) x1 = x0 + 1000.0;
+
+    y0 = Number(first[1]);
+    if (isNaN(y0)) y0 = 1.0;
+
+    y1 = Number(last[1]);
+    if (isNaN(y1)) y1 = 0.0;
+  } else if (Array.isArray(currentPoints) && currentPoints.length === 1) {
+    const pt = currentPoints[0];
+    x0 = Number(pt[0]) || 0;
+    x1 = x0 + (x0 >= 10 ? 1000.0 : 1.0);
+    y0 = Number(pt[1]) ?? 1.0;
+    y1 = 0.0;
+  }
+
+  // Ensure positive span
+  if (x1 <= x0) {
+    x1 = x0 + (x0 >= 10 ? 1000.0 : 1.0);
+  }
+
+  const dx = x1 - x0;
+
+  switch (presetKey) {
+    case "linear": {
+      // Linear falloff: decay from startY to endY
+      let startY = y0;
+      let endY = y1;
+      if (startY === endY) {
+        startY = startY > 0 ? startY : 1.0;
+        endY = 0.0;
+      }
+      const dy = endY - startY;
+      const slope = Number((dy / dx).toFixed(6));
+      return [
+        [roundFloat(x0), roundFloat(startY), slope, slope, 2, 3],
+        [roundFloat(x1), roundFloat(endY), slope, slope, 1, 1]
+      ];
+    }
+
+    case "smooth": {
+      // Smooth S-Curve: 4-point Hermite spline adapting to descending falloff or ascending rise
+      let startY = y0;
+      let endY = y1;
+      if (startY === endY) {
+        startY = startY > 0 ? startY : 1.0;
+        endY = 0.0;
+      }
+      const dy = endY - startY;
+
+      if (dy < 0) {
+        // Acoustic falloff profile (high nearby, steep drop mid-distance, gradual tail)
+        const slopeMid1 = Number(((dy / dx) * 1.25).toFixed(6));
+        const slopeMid2 = Number(((dy / dx) * 0.35).toFixed(6));
+        return [
+          [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
+          [roundFloat(x0 + dx * 0.16), roundFloat(startY + dy * 0.20), slopeMid1, slopeMid1, 3, 1],
+          [roundFloat(x0 + dx * 0.60), roundFloat(startY + dy * 0.90), slopeMid2, slopeMid2, 3, 1],
+          [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
+        ];
+      } else {
+        // Ascending ease-in-out S-curve
+        const slopeMid = Number(((dy / dx) * 1.5).toFixed(6));
+        return [
+          [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
+          [roundFloat(x0 + dx * 0.35), roundFloat(startY + dy * 0.18), slopeMid, slopeMid, 3, 1],
+          [roundFloat(x0 + dx * 0.65), roundFloat(startY + dy * 0.82), slopeMid, slopeMid, 3, 1],
+          [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
+        ];
+      }
+    }
+
+    case "fade_in": {
+      // Smooth fade-in: start low (or 0), end high (or 1)
+      let startY = y0;
+      let endY = y1;
+      if (startY >= endY) {
+        startY = 0.0;
+        endY = endY > 0 ? endY : 1.0;
+      }
+      return [
+        [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
+        [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
+      ];
+    }
+
+    case "flat": {
+      // Constant 1.0 across the domain
+      return [
+        [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3],
+        [roundFloat(x1), 1.0, 0.0, 0.0, 1, 1]
+      ];
+    }
+
+    default:
+      return currentPoints;
+  }
+}
 
 /**
  * Render Curve onto HTML5 Canvas with HiDPI / scaling support

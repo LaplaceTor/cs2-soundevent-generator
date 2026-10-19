@@ -2032,4 +2032,4 @@ export const PRESETS = {
   }
 };
 
-export { CURVE_PRESETS } from "./curve.js";
+export { CURVE_PRESETS, generateCurveFromEndpoints } from "./curve.js";

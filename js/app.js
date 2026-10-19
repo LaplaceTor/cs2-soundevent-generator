@@ -7,7 +7,7 @@ import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRE
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
-import { drawCurveCanvas, attachInteractiveCurve, CURVE_PRESETS } from "./curve.js";
+import { drawCurveCanvas, attachInteractiveCurve, CURVE_PRESETS, generateCurveFromEndpoints } from "./curve.js";
 import { Kv3Autocomplete } from "./autocomplete.js";
 
 // Global App State
@@ -616,10 +616,10 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     toolbar.innerHTML = `
       <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">${t.curveEditor.title}</span>
       <div class="flex items-center gap-1 text-[10px]">
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear">${t.curveEditor.presetLinear}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth">${t.curveEditor.presetSmooth}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in">${t.curveEditor.presetFadeIn}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat">${t.curveEditor.presetFlat}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear" title="${state.lang === 'zh' ? '基于当前起止点生成线性衰减' : 'Generate linear falloff based on current endpoints'}">${t.curveEditor.presetLinear}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth" title="${state.lang === 'zh' ? '基于当前起止点生成平滑S型曲线' : 'Generate smooth S-curve based on current endpoints'}">${t.curveEditor.presetSmooth}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in" title="${state.lang === 'zh' ? '基于当前起止点生成平滑淡入曲线' : 'Generate smooth fade-in based on current endpoints'}">${t.curveEditor.presetFadeIn}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat" title="${state.lang === 'zh' ? '基于当前起止点生成恒定1.0' : 'Generate constant 1.0 based on current endpoints'}">${t.curveEditor.presetFlat}</button>
       </div>
     `;
 
@@ -633,7 +633,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     // Tip
     const tipEl = document.createElement("div");
     tipEl.className = "text-[10px] text-gray-400 dark:text-gray-500 flex justify-between";
-    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>X: 距离/时间 | Y: 音量倍率</span>`;
+    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>预设基于起止端点自适应生成</span>`;
 
     // Table Container
     const tableWrap = document.createElement("div");
@@ -684,13 +684,16 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
         const handler = (e) => {
           const pIdx = Number(e.target.getAttribute("data-pidx"));
           const col = Number(e.target.getAttribute("data-c"));
+          if (!curvePoints[pIdx]) return;
           curvePoints[pIdx][col] = parseFloat(e.target.value) || 0;
-          if (col === 0) {
+          if (col === 0 && e.type === "change") {
             curvePoints.sort((a, b) => a[0] - b[0]);
+            renderTableRows();
           }
           if (interactiveCtrl) interactiveCtrl.redraw();
           onUserEdit(curvePoints);
         };
+        cell.addEventListener("input", handler);
         cell.addEventListener("change", handler);
       });
 
@@ -733,16 +736,14 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
       }
     });
 
-    // Preset button clicks
+    // Preset button clicks (dynamic generation based on user's current XY endpoints)
     toolbar.querySelectorAll("[data-cpreset]").forEach(btn => {
       btn.addEventListener("click", (e) => {
         const presetKey = e.target.getAttribute("data-cpreset");
-        if (CURVE_PRESETS[presetKey]) {
-          curvePoints = JSON.parse(JSON.stringify(CURVE_PRESETS[presetKey]));
-          renderTableRows();
-          if (interactiveCtrl) interactiveCtrl.redraw();
-          onUserEdit(curvePoints);
-        }
+        curvePoints = generateCurveFromEndpoints(presetKey, curvePoints);
+        renderTableRows();
+        if (interactiveCtrl) interactiveCtrl.redraw();
+        onUserEdit(curvePoints);
       });
     });
 
