@@ -3,7 +3,7 @@
  * Pure Vanilla ES Modules, Responsive Split-Pane Layout.
  */
 
-import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS } from "./schema.js";
+import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue } from "./schema.js";
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
@@ -148,6 +148,13 @@ function renderGroups() {
     const localizedGroupTitle = t.groups[groupId] || defaultTitle;
     const props = Object.entries(SPECS)
       .filter(([_, spec]) => spec.group === groupId)
+      .filter(([key]) => {
+        // 'value' (通用数值参数) only appears if current Type requires it or if already enabled
+        if (key === "value") {
+          return typeNeedsValue(state.properties.type) || state.enabledProperties.has("value");
+        }
+        return true;
+      })
       .map(([key, spec]) => ({ key, spec }));
 
     // Filter properties based on search & active filter
@@ -161,15 +168,34 @@ function renderGroups() {
       return key.toLowerCase().includes(s) || label.includes(s) || desc.includes(s);
     });
 
-    if (filterSearch && visibleProps.length === 0 && groupId !== "custom") {
-      continue;
+    const activeCountInGroup = props.filter(p => state.enabledProperties.has(p.key)).length;
+
+    // 1. If filtering active only, hide any group with zero active properties
+    if (filterActiveOnly) {
+      if (groupId === "custom") {
+        if (state.customProperties.length === 0) continue;
+      } else if (activeCountInGroup === 0) {
+        continue;
+      }
+    }
+
+    // 2. If searching, hide groups with zero matching properties
+    if (filterSearch) {
+      if (groupId === "custom") {
+        const matchesCustom = state.customProperties.some(
+          cp => cp.key.toLowerCase().includes(filterSearch.toLowerCase()) || 
+                cp.value.toLowerCase().includes(filterSearch.toLowerCase())
+        );
+        if (!matchesCustom && visibleProps.length === 0) continue;
+      } else if (visibleProps.length === 0) {
+        continue;
+      }
     }
 
     const groupSection = document.createElement("div");
     groupSection.className = "border-b border-gray-200 dark:border-gray-800";
 
     const isExpanded = expandedGroups.has(groupId);
-    const activeCountInGroup = props.filter(p => state.enabledProperties.has(p.key)).length;
     const groupNumStr = String(groupIdx++).padStart(2, "0");
 
     // Group Header (Minimal Accordion)
@@ -352,6 +378,9 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     updateGroupBadge(spec.group);
     if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
     updateOutput();
+    if (filterActiveOnly) {
+      renderGroups();
+    }
   });
 
   // Control Wrap (Always rendered)
@@ -365,6 +394,24 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
   row.appendChild(controlWrap);
 
   return row;
+}
+
+/**
+ * Handle Type change to dynamically add or remove 'value' (通用数值参数)
+ */
+function handleTypeChange(newType) {
+  const needsVal = typeNeedsValue(newType);
+  const hasVal = state.enabledProperties.has("value");
+  if (needsVal && !hasVal) {
+    if (state.properties["value"] === undefined) {
+      state.setPropertyValue("value", DEFAULTS["value"] ?? 1.0);
+    }
+    state.setPropertyEnabled("value", true);
+    renderGroups();
+  } else if (!needsVal && hasVal) {
+    state.setPropertyEnabled("value", false);
+    renderGroups();
+  }
 }
 
 /**
@@ -490,11 +537,13 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     select.addEventListener("change", (e) => {
       textInput.value = e.target.value;
       onUserEdit(e.target.value);
+      if (key === "type") handleTypeChange(e.target.value);
     });
 
     textInput.addEventListener("input", (e) => {
       select.value = e.target.value;
       onUserEdit(e.target.value);
+      if (key === "type") handleTypeChange(e.target.value);
     });
 
     wrap.appendChild(select);
@@ -727,21 +776,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 8. Comment
-  if (kind === "comment" || key === "comment") {
-    const textarea = document.createElement("textarea");
-    textarea.className = "w-full p-2 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white resize-y placeholder:text-gray-400";
-    textarea.rows = 2;
-    textarea.placeholder = "添加注释（可选）...";
-    textarea.value = val !== undefined ? val : "";
-    textarea.addEventListener("input", (e) => {
-      onUserEdit(e.target.value);
-    });
-    container.appendChild(textarea);
-    return;
-  }
-
-  // 9. Default string / text / legacy input
+  // 8. Default string / text / legacy input
   const input = document.createElement("input");
   input.type = "text";
   input.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
@@ -893,6 +928,14 @@ function syncLeftControlsFromParsed(data) {
       state.properties[key] = parsedProps[key];
     } else {
       state.enabledProperties.delete(key);
+    }
+  }
+
+  // If Type requires 'value', automatically enable it
+  if (typeNeedsValue(state.properties.type) && !state.enabledProperties.has("value")) {
+    state.enabledProperties.add("value");
+    if (state.properties["value"] === undefined) {
+      state.properties["value"] = DEFAULTS["value"] ?? 1.0;
     }
   }
 

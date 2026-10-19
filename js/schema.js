@@ -77,11 +77,6 @@ export const GROUPS = [
 export const COLLAPSED_BY_DEFAULT = new Set(["custom", "advanced"]);
 
 export const SPECS = {
-  "comment": {
-    "kind": "comment",
-    "group": "general",
-    "options": {}
-  },
   "type": {
     "kind": "combobox",
     "group": "general",
@@ -98,11 +93,6 @@ export const SPECS = {
     "options": {
       "objects": []
     }
-  },
-  "metadata": {
-    "kind": "legacy",
-    "group": "general",
-    "options": {}
   },
   "value": {
     "kind": "float",
@@ -1297,7 +1287,6 @@ export const SPECS = {
 };
 
 export const DEFAULTS = {
-  "comment": "",
   "volume": 1,
   "delay": 1,
   "pitch": 1,
@@ -1417,7 +1406,6 @@ export const DEFAULTS = {
   "mixgroup": "Amb_Common",
   "type": "csgo_mega",
   "base": "amb.base",
-  "metadata": "mediumfs 1000",
   "set_mixlayer_layer": "PlayerAttackerFeedbackLayer",
   "block_other_name": "DeathHeadShotArmor",
   "volume_convar": "snd_surf_volume_slide",
@@ -1867,8 +1855,19 @@ export const DSP_PRESETS = [
 
 export const TYPE_OBJECTS = [
   "csgo_mega",
-  "csgo_music"
+  "csgo_music",
+  "csgo_set_volume",
+  "hlvr_set_soundevent_volume"
 ];
+
+/**
+ * Checks whether a SoundEvent Type requires the 'value' (通用数值参数) property
+ */
+export function typeNeedsValue(typeName) {
+  if (!typeName || typeof typeName !== "string") return false;
+  const t = typeName.toLowerCase().trim();
+  return t.includes("set_") || t.includes("setter") || t.startsWith("set") || t.includes("_set");
+}
 
 export const MIXGROUPS = [
   "ArmsRace",
@@ -1958,8 +1957,7 @@ export const PRESETS = {
       distance_volume_mapping_curve: [
         [97.14, 1.0, -0.00176, -0.00176, 2, 3],
         [2000.0, 0.0, -0.00052, -0.00052, 1, 1]
-      ],
-      comment: '3D spatial sound created with online generator'
+      ]
     }
   },
   debug_sound: {
@@ -1971,8 +1969,7 @@ export const PRESETS = {
       base: 'amb.base',
       vsnd_files_track_01: ['sounds/common/pink_noise_mono_loop.vsnd'],
       position_relative_to_player: true,
-      volume: 1.0,
-      comment: 'Debugging sound event for testing range and propagation'
+      volume: 1.0
     }
   },
   ui_sound: {
@@ -1986,8 +1983,7 @@ export const PRESETS = {
       is_ui_sound: true,
       vsnd_files_track_01: ['sounds/ui/menu_click.vsnd'],
       volume: 1.0,
-      pitch: 1.0,
-      comment: '2D UI sound event'
+      pitch: 1.0
     }
   },
   music_track: {
@@ -2002,8 +1998,7 @@ export const PRESETS = {
       volume: 1.0,
       loop_track: 'true',
       should_queue_track: 'true',
-      stop_all_non_music: 'true',
-      comment: 'CS2 music stack event'
+      stop_all_non_music: 'true'
     }
   },
   ambient_retrigger: {
@@ -2025,8 +2020,7 @@ export const PRESETS = {
       retrigger_interval_max: 20.0,
       retrigger_radius: 2000.0,
       use_world_position: true,
-      position: [0.0, 0.0, 0.0],
-      comment: 'Randomized periodic bird call'
+      position: [0.0, 0.0, 0.0]
     }
   },
   empty: {

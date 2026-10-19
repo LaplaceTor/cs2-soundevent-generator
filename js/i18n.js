@@ -87,10 +87,8 @@ export const I18N = {
     "custom": "自定义键值 (Custom)"
 },
     labels: {
-    "comment": "作者备注说明",
     "type": "声音操作堆栈类型 (Type)",
     "base": "继承父级事件 (Base)",
-    "metadata": "引擎/工具元数据 (Metadata)",
     "value": "通用数值参数 (Value)",
     "vsnd_duration": "VSND 缓存时长 (秒)",
     "volume": "基础主音量 (Volume)",
@@ -230,7 +228,6 @@ export const I18N = {
     "retrigger_keepalive_override": "csgo_mega 重触发保活生命周期覆盖 (秒)"
 },
     tooltips: {
-    "comment": "作者在 KV3 中留下的自由注释，HT5 和游戏引擎会保留它，不影响实际音频播放。",
     "volume": "基础播放音量。实际最终音量还会受到随机音量偏移、衰减曲线、混音组增益以及控制台音量变量的乘法影响。",
     "delay": "触发事件后延迟播放的秒数。",
     "pitch": "基础播放速率/音调倍率。1.0 为正常原速原调，可在其基础上叠加随机音调浮动。",
@@ -341,7 +338,6 @@ export const I18N = {
     "mixgroup": "当前声音事件所属的混音组，决定基础分路增益、总线路由及 DSP 效果分配。",
     "type": "声音操作堆栈架构。CS2 常用包括 csgo_mega（3D 空间音效）与 csgo_music（音乐系统）。",
     "base": "继承另一个声音事件的全部属性，当前事件中声明的属性将覆盖父级同名属性。",
-    "metadata": "附加在声音事件上的引擎/工具元数据标签（例如 mediumfs 1000 等）。",
     "set_mixlayer_layer": "由 Time Mixlayer Amount Curve 曲线动态驱动的目标混音层名称。",
     "block_other_name": "Block Other 阻断其他声音时所匹配的目标声音事件名称子字符串。",
     "volume_convar": "绑定用于实时缩放事件音量的游戏控制台变量名称。",
@@ -456,10 +452,8 @@ export const I18N = {
     "custom": "Custom"
 },
     labels: {
-    "comment": "comment",
     "type": "type",
     "base": "base",
-    "metadata": "metadata",
     "value": "value",
     "vsnd_duration": "vsnd_duration",
     "volume": "volume",
@@ -599,7 +593,6 @@ export const I18N = {
     "retrigger_keepalive_override": "retrigger_keepalive_override"
 },
     tooltips: {
-    "comment": "Free-form note for authors. HT5 preserves it with the event; it does not control audio playback.",
     "volume": "Base playback volume. Random offsets, curves, mixgroup gain and volume convars can modify the final level.",
     "delay": "Delay in seconds before the event starts playing.",
     "pitch": "Base playback-rate multiplier. 1.0 is normal pitch and speed; random pitch offsets can be added to it.",
@@ -710,7 +703,6 @@ export const I18N = {
     "mixgroup": "Mixer group used for event gain, routing and DSP behavior.",
     "type": "Selects the sound-event operator stack or implementation. Common CS2 types include csgo_mega for spatial events and csgo_music for music playback.",
     "base": "Inherit properties from another sound event, then override them with values defined on this event.",
-    "metadata": "Engine/tool metadata tags attached to the sound event. The string format is engine-specific; shipped examples include mediumfs 1000 and quietfs 600.",
     "set_mixlayer_layer": "Name of the mixer layer whose amount is driven by Time Mixlayer Amount Curve.",
     "block_other_name": "Event-name substring matched by Block Other.",
     "volume_convar": "Console variable whose current value scales the event volume.",
