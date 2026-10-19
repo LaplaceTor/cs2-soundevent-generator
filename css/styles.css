@@ -1,0 +1,546 @@
+/* ==========================================================================
+   Modern Minimalist Design System - CS2 SoundEvent Generator
+   Crisp 1px borders, generous typography hierarchy, zero bulky cards.
+   ========================================================================== */
+
+/* Robust Cross-Platform Font Fallbacks & Color Scheme */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "WenQuanYi Micro Hei", system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', "Cascadia Code", "Cascadia Mono", Consolas, "Segoe UI Mono", ui-monospace, Menlo, Monaco, "PingFang SC", "Microsoft YaHei", "微软雅黑", monospace;
+  color-scheme: light;
+}
+
+:root.dark,
+html.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color-scheme: inherit;
+}
+
+.font-mono,
+#codeEditor,
+#lineNumbers,
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono) !important;
+}
+
+/* Native <select> and <option> Dark Mode Support */
+select option {
+  background-color: #FFFFFF;
+  color: #111827;
+}
+
+.dark select option,
+html.dark select option,
+[data-theme="dark"] select option {
+  background-color: #111827 !important;
+  color: #F9FAFB !important;
+}
+
+.dark select:focus {
+  background-color: #111827;
+}
+
+/* Thin Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 2px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Ensure toolbar and header buttons wrap as units, never breaking inner text */
+header button,
+header select,
+header .flex-shrink-0,
+#rightEditorSection button,
+#rightEditorSection select,
+button,
+select {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+/* Ensure flex containers wrapping buttons allow clean multi-line wrapping */
+.btn-group-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Custom Minimalist Checkbox (No default browser styling) */
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #D1D5DB;
+  border-radius: 2px;
+  background-color: transparent;
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dark .custom-checkbox {
+  border-color: #4B5563;
+}
+
+.custom-checkbox:hover {
+  border-color: #111827;
+}
+
+.dark .custom-checkbox:hover {
+  border-color: #F9FAFB;
+}
+
+.custom-checkbox:checked {
+  background-color: #111827;
+  border-color: #111827;
+}
+
+.dark .custom-checkbox:checked {
+  background-color: #F9FAFB;
+  border-color: #F9FAFB;
+}
+
+.custom-checkbox:checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid #FFFFFF;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.dark .custom-checkbox:checked::after {
+  border-color: #111827;
+}
+
+/* Custom Minimalist Range Slider */
+.minimal-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: #E5E7EB;
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dark .minimal-slider {
+  background: #374151;
+}
+
+.minimal-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #111827;
+  border: 1px solid #FFFFFF;
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease;
+}
+
+.dark .minimal-slider::-webkit-slider-thumb {
+  background: #F9FAFB;
+  border-color: #111827;
+}
+
+.minimal-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.minimal-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #111827;
+  border: 1px solid #FFFFFF;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.dark .minimal-slider::-moz-range-thumb {
+  background: #F9FAFB;
+  border-color: #111827;
+}
+
+/* Minimal Property Row */
+.prop-row {
+  padding: 10px 16px;
+  border-bottom: 1px solid #F3F4F6;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.dark .prop-row {
+  border-bottom-color: #1F2937;
+}
+
+.prop-row:not(.enabled) {
+  opacity: 0.72;
+}
+
+.prop-row:not(.enabled):hover,
+.prop-row:not(.enabled):focus-within {
+  opacity: 1;
+}
+
+.prop-row.enabled {
+  opacity: 1;
+}
+
+.prop-row.enabled::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #111827;
+}
+
+.dark .prop-row.enabled::before {
+  background-color: #F9FAFB;
+}
+
+/* Curve Table in Minimalist theme */
+.curve-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-family: var(--font-mono) !important;
+  font-size: 10px;
+}
+
+.curve-table th {
+  padding: 3px 2px;
+  text-align: center;
+  font-weight: 500;
+  color: #6B7280;
+  border-bottom: 1px solid #E5E7EB;
+  white-space: nowrap;
+}
+
+.dark .curve-table th {
+  border-bottom-color: #374151;
+  color: #9CA3AF;
+}
+
+.curve-table td {
+  padding: 2px 1px;
+  border-bottom: 1px solid #F3F4F6;
+  text-align: center;
+}
+
+.dark .curve-table td {
+  border-bottom-color: #1F2937;
+}
+
+.curve-cell-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 1px 2px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 10px;
+  text-align: center;
+}
+
+.curve-cell-input:focus {
+  border-color: #111827;
+  outline: none;
+}
+
+.dark .curve-cell-input:focus {
+  border-color: #F9FAFB;
+}
+
+/* Minimal Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: calc(100vw - 48px);
+  background-color: #111827;
+  color: #FFFFFF;
+  border: 1px solid #374151;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+.dark .toast {
+  background-color: #F9FAFB;
+  color: #111827;
+  border-color: #E5E7EB;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   Code Editor & Autocomplete Styles
+   ========================================================================== */
+
+/* Error highlights for Code Editor */
+.editor-container {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.editor-container.editor-error {
+  border-color: #EF4444 !important;
+  box-shadow: inset 0 0 0 1px #EF4444 !important;
+}
+
+.badge-valid {
+  background-color: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #047857;
+}
+
+.dark .badge-valid {
+  background-color: rgba(6, 78, 59, 0.4);
+  border-color: #065F46;
+  color: #34D399;
+}
+
+.badge-error {
+  background-color: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #DC2626 !important;
+}
+
+.dark .badge-error {
+  background-color: rgba(127, 29, 29, 0.4) !important;
+  border-color: #991B1B !important;
+  color: #F87171 !important;
+}
+
+/* Drawer scroll lock and containment */
+body.drawer-open {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+#rightEditorSection {
+  overscroll-behavior: contain;
+}
+
+#editorContainer {
+  overscroll-behavior: contain;
+}
+
+/* Code Editor text wrapping - prevent horizontal scrollbars */
+#codeEditor {
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+}
+
+/* Line gutter */
+.gutter-line {
+  min-height: 20px;
+  line-height: 20px;
+  padding-right: 8px;
+  box-sizing: border-box;
+  transition: background-color 0.1s ease;
+}
+
+.gutter-line.gutter-error-line {
+  background-color: #EF4444 !important;
+  color: #FFFFFF !important;
+  font-weight: bold;
+  border-radius: 2px;
+}
+
+/* Autocomplete Popup */
+.autocomplete-popup {
+  position: absolute;
+  width: 320px;
+  max-width: calc(100% - 32px);
+  max-height: 240px;
+  overflow-y: auto;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
+.dark .autocomplete-popup {
+  background-color: #111827;
+  border-color: #374151;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+.autocomplete-item {
+  transition: background-color 0.1s ease;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+  background-color: #F3F4F6;
+}
+
+.dark .autocomplete-item:hover,
+.dark .autocomplete-item.selected {
+  background-color: #1F2937;
+}
+
+.autocomplete-item.selected {
+  border-left: 2px solid #111827;
+}
+
+.dark .autocomplete-item.selected {
+  border-left: 2px solid #F9FAFB;
+}
+
+/* ==========================================================================
+   Responsive 3-Zone Header & Editor Bar Grid System
+   Standalone controls (Lang/Theme, Close) are physically isolated on the right.
+   Zero jumping, zero order shuffling when resizing between narrow and wide!
+   ========================================================================== */
+
+.header-responsive-bar,
+.editor-responsive-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.header-col-title,
+.editor-col-title {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.header-col-prefs {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  flex-shrink: 0;
+}
+
+.editor-col-close {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  flex-shrink: 0;
+}
+
+.header-col-actions,
+.editor-col-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .header-responsive-bar {
+    grid-template-columns: auto 1fr auto;
+    gap: 8px 16px;
+  }
+
+  .header-col-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .header-col-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .header-col-prefs {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 640px) {
+  .editor-responsive-bar {
+    grid-template-columns: auto 1fr auto;
+    gap: 8px 16px;
+  }
+
+  .editor-col-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .editor-col-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .editor-col-close {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .editor-responsive-bar {
+    grid-template-columns: auto 1fr;
+  }
+}
+

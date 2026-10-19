@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark" style="color-scheme: dark;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS2 SoundEvent Generator | Valve Source 2 Audio Tool</title>
+  <meta name="description" content="Modern Minimalist Visual Generator & Two-Way Editor for Counter-Strike 2 SoundEvent KeyValues3">
+
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: [
+              'Inter',
+              '-apple-system',
+              'BlinkMacSystemFont',
+              '"Segoe UI"',
+              'Roboto',
+              '"PingFang SC"',
+              '"Hiragino Sans GB"',
+              '"Microsoft YaHei"',
+              '"微软雅黑"',
+              '"WenQuanYi Micro Hei"',
+              'system-ui',
+              'sans-serif'
+            ],
+            mono: [
+              'JetBrains Mono',
+              '"Cascadia Code"',
+              '"Cascadia Mono"',
+              'Consolas',
+              '"Segoe UI Mono"',
+              'ui-monospace',
+              'Menlo',
+              'Monaco',
+              '"PingFang SC"',
+              '"Microsoft YaHei"',
+              '"微软雅黑"',
+              'monospace'
+            ]
+          },
+          colors: {
+            charcoal: '#111827',
+            lightBorder: '#E5E7EB',
+            darkBorder: '#1F2937'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Minimalist Styles -->
+  <link rel="stylesheet" href="css/styles.css?v=2.8">
+</head>
+<body class="bg-white text-gray-900 dark:bg-[#0B0F17] dark:text-gray-100 min-h-screen lg:h-screen lg:overflow-hidden flex flex-col font-sans antialiased transition-colors duration-150">
+
+  <!-- Top Navigation Header (3-Zone Responsive Grid: Title Left, Prefs Right, Actions flow) -->
+  <header class="header-responsive-bar min-h-14 py-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur sticky top-0 z-40 px-4 lg:px-6 flex-shrink-0">
+    <!-- Zone 1: Brand / Title (Always pinned Left) -->
+    <div class="header-col-title flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+      <span class="text-xs font-bold uppercase tracking-widest text-black dark:text-white flex items-center gap-2 whitespace-nowrap">
+        <span class="inline-block w-2 h-2 bg-black dark:bg-white rounded-none"></span>
+        CS2 SOUNDEVENT
+      </span>
+      <span class="text-[11px] font-mono px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 text-gray-500 rounded whitespace-nowrap">KV3 SPEC</span>
+    </div>
+
+    <!-- Zone 2: Action Controls (Presets, Share, Reset - Flows in middle on wide, Row 2 on narrow; strictly NO internal wrapping) -->
+    <div class="header-col-actions flex items-center flex-nowrap gap-1.5 sm:gap-2 lg:gap-3 text-xs justify-start lg:justify-end whitespace-nowrap">
+      <!-- Preset Dropdown -->
+      <div class="flex items-center gap-1.5 text-gray-500 flex-shrink-0 whitespace-nowrap">
+        <span class="hidden sm:inline" data-i18n="presetLabel">预设：</span>
+        <select id="presetSelect" class="bg-transparent text-gray-900 dark:text-gray-100 font-medium py-1 px-2 border border-gray-200 dark:border-gray-800 rounded outline-none cursor-pointer hover:border-black dark:hover:border-white transition-colors whitespace-nowrap">
+        </select>
+      </div>
+
+      <!-- Share URL -->
+      <button id="shareBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Share URL">
+        <span class="hidden sm:inline">🔗 </span><span data-i18n="shareBtn">分享</span>
+      </button>
+
+      <!-- Reset -->
+      <button id="resetBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Reset">
+        <span data-i18n="resetBtn">重置</span>
+      </button>
+    </div>
+
+    <!-- Zone 3: Standalone Preferences (Language & Theme: Physically isolated on far right, separated by 1px divider on desktop) -->
+    <div class="header-col-prefs flex items-center gap-1.5 sm:gap-2 text-xs flex-shrink-0 lg:pl-3 lg:border-l lg:border-gray-200 lg:dark:border-gray-800">
+      <button id="langToggleBtn" class="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Toggle Language">
+        EN
+      </button>
+      <button id="themeToggleBtn" class="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Toggle Theme">
+        ☀️
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container: Full-Width Workspace (Fixed-width Left, Flex-1 Right on Desktop; Slide-up Drawer on Mobile) -->
+  <main class="w-full flex-1 min-h-0 flex flex-col lg:flex-row border-t border-gray-200 dark:border-gray-800 lg:overflow-hidden relative">
+
+    <!-- LEFT COLUMN (Fixed Width on Desktop, Full Width on Mobile, Independently Scrollable) -->
+    <section class="w-full lg:w-[380px] lg:flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full bg-white dark:bg-[#0B0F17] overflow-hidden">
+      
+      <!-- Left Header Toolbar (Strictly aligns with Right Header Toolbar: h-11, px-4, border-b) -->
+      <div class="h-11 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            CONFIGURATION
+          </span>
+          <span class="text-[10px] font-mono text-gray-400 hidden sm:inline">(可视化属性)</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px]">
+          <button id="expandAllBtn" class="text-gray-500 hover:text-black dark:hover:text-white transition-colors" data-i18n="expandAll">展开</button>
+          <span class="text-gray-300 dark:text-gray-700">/</span>
+          <button id="collapseAllBtn" class="text-gray-500 hover:text-black dark:hover:text-white transition-colors" data-i18n="collapseAll">折叠</button>
+        </div>
+      </div>
+
+      <!-- Pinned Section: 01. Event Identifier & 02. Search & Filter -->
+      <div class="p-3.5 border-b border-gray-200 dark:border-gray-800 space-y-3 flex-shrink-0 bg-white dark:bg-[#0B0F17]">
+        <!-- 01. Event Name -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="eventNameInput" class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400" data-i18n="eventNameLabel">
+              01. EVENT IDENTIFIER
+            </label>
+            <span class="text-[10px] font-mono text-gray-400">KV3</span>
+          </div>
+          <input 
+            type="text" 
+            id="eventNameInput" 
+            class="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-gray-400"
+            placeholder="Weapon_AK47.Single"
+          >
+        </div>
+
+        <!-- 02. Search & Filter Bar -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              02. FILTER & SEARCH
+            </span>
+          </div>
+
+          <!-- Search Input -->
+          <input 
+            type="text" 
+            id="searchInput" 
+            class="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-gray-400"
+            placeholder="快速搜索 90+ 属性 (volume, pitch, 曲线)..."
+          >
+
+          <!-- Filter Segmented Tabs -->
+          <div class="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-medium text-center">
+            <button id="filterAllBtn" class="py-1 rounded-sm text-black dark:text-white font-semibold transition-all" data-i18n="filterAll">
+              全部属性
+            </button>
+            <button id="filterActiveBtn" class="py-1 rounded-sm text-gray-500 hover:text-black dark:hover:text-white transition-all" data-i18n="filterActiveOnly">
+              已启用 (<span id="activeFilterBadge">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03. Scrollable Properties List (Independently scrolls when mouse cursor is on left panel) -->
+      <div id="groupsContainer" class="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-gray-200 dark:divide-gray-800">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+
+    </section>
+
+    <!-- Overlay Backdrop (for Mobile/Narrow Drawer) -->
+    <div id="drawerBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-200"></div>
+
+    <!-- Floating Button on Mobile / Narrow Screen to call up the editor -->
+    <button id="openEditorDrawerBtn" class="lg:hidden fixed bottom-5 right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer">
+      <span>📄</span>
+      <span data-i18n="viewCodeBtn">查看代码</span>
+      <span id="drawerStatusDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+    </button>
+
+    <!-- RIGHT COLUMN (Flex-1 Auto-adjusting on Desktop; Slide-up Bottom Drawer on Mobile/Narrow) -->
+    <section id="rightEditorSection" class="
+      fixed inset-x-0 bottom-0 z-50 h-[84vh] rounded-t-2xl border-t border-gray-300 dark:border-gray-700 shadow-2xl transform translate-y-full transition-transform duration-300 ease-out
+      lg:static lg:inset-auto lg:bottom-auto lg:z-auto lg:h-full lg:rounded-none lg:border-t-0 lg:shadow-none lg:transform-none lg:transition-none
+      flex flex-col bg-white dark:bg-[#0B0F17] overflow-hidden flex-1 min-w-0
+    ">
+
+      <!-- Right Header Toolbar (Strictly aligns with Left Header Toolbar: min-h-11, px-4, border-b) -->
+      <div class="editor-responsive-bar min-h-11 px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex-shrink-0">
+        
+        <!-- Zone 1: Title & Syntax Status Badge (Left) -->
+        <div class="editor-col-title flex items-center gap-2 flex-shrink-0 py-0.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap" data-i18n="editorTitle">
+            LIVE KV3 EDITOR
+          </span>
+
+          <!-- Syntax Validation Status Badge -->
+          <div id="editorStatusBadge" class="badge-valid inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium border transition-colors whitespace-nowrap flex-shrink-0">
+            <span id="editorStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+            <span id="editorStatusText" data-i18n="statusValid">格式正确</span>
+          </div>
+        </div>
+
+        <!-- Zone 2: Editor Options & Actions (Middle on wide, Row 2 on narrow; strictly NO internal wrapping) -->
+        <div class="editor-col-actions flex items-center flex-nowrap gap-2.5 sm:gap-3 py-0.5 justify-start sm:justify-end whitespace-nowrap">
+          <!-- Comments Toggle -->
+          <label class="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-black dark:hover:text-white cursor-pointer select-none whitespace-nowrap flex-shrink-0 transition-colors">
+            <input type="checkbox" id="includeCommentsCheck" class="custom-checkbox">
+            <span data-i18n="includeComments">中文注释</span>
+          </label>
+
+          <!-- Divider between Option Group and Action Group -->
+          <span class="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0"></span>
+
+          <!-- Editor Actions (Format, Copy) -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button id="formatBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Format KV3">
+              ⚡ <span data-i18n="formatBtn">格式化</span>
+            </button>
+            <button id="copyCodeBtn" class="py-1 px-3 bg-black text-white dark:bg-white dark:text-black rounded text-[11px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0">
+              📋 <span data-i18n="copyCodeBtn">复制</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Zone 3: Dedicated Standalone Close Button (Isolated on far right, bordered and larger, separated by 1px divider on tablet) -->
+        <div class="editor-col-close lg:hidden flex items-center justify-end flex-shrink-0 sm:pl-3 sm:border-l sm:border-gray-200 sm:dark:border-gray-800">
+          <button id="closeEditorDrawerBtn" class="w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-black dark:hover:border-white text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white rounded text-base font-bold transition-all shadow-sm active:scale-95" title="Close Drawer" aria-label="Close Drawer">
+            ✕
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Syntax Error Banner (Clearly visible red banner when format is invalid) -->
+      <div id="errorBanner" class="hidden px-4 py-1.5 bg-red-50 dark:bg-red-950/60 border-b border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-mono flex items-center justify-between flex-shrink-0 transition-all">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex-shrink-0">!</span>
+          <span id="errorMessage" class="truncate font-semibold">语法错误</span>
+        </div>
+        <span class="text-[11px] text-red-500 font-sans ml-2 flex-shrink-0">左侧同步已暂停，请修正代码</span>
+      </div>
+
+      <!-- Main Code Editor Workspace with Gutter (Independently scrolls when mouse cursor is on right panel) -->
+      <div id="editorContainer" class="editor-container flex-1 flex overflow-hidden relative bg-gray-50/20 dark:bg-gray-950/30">
+        <!-- Line Numbers Gutter -->
+        <div id="editorGutter" class="w-12 select-none py-4 text-right font-mono text-xs text-gray-400 dark:text-gray-600 border-r border-gray-100 dark:border-gray-800/60 bg-gray-50/60 dark:bg-gray-950/40 overflow-hidden leading-[20px] flex-shrink-0">
+          <!-- 1, 2, 3 ... -->
+        </div>
+
+        <!-- Monospace Textarea Code Editor (Soft wrap, strictly no horizontal scrollbar) -->
+        <textarea 
+          id="codeEditor" 
+          spellcheck="false" 
+          wrap="soft"
+          class="flex-1 w-full p-4 font-mono text-xs leading-[20px] bg-transparent resize-none outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words"
+          placeholder='// 在此直接编写或修改 CS2 SoundEvent KV3 代码，实时双向同步！'
+        ></textarea>
+
+        <!-- Autocomplete Dropdown Popup -->
+        <div id="autocompletePopup" class="autocomplete-popup hidden"></div>
+      </div>
+
+      <!-- Bottom Hint Bar -->
+      <div class="h-6 px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <span>Tab: 缩进 (Indent)</span>
+          <span>Ctrl+Space: 代码补全建议 (Suggestions)</span>
+        </div>
+        <div id="cursorPosIndicator">Ln 1, Col 1</div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Minimalist Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Main ES Module Script with cache busting -->
+  <script type="module" src="js/app.js?v=2.8"></script>
+
+</body>
+</html>
