@@ -43,9 +43,10 @@ export const I18N = {
     activePropsCount: "已启用属性：",
     curveEditor: {
       title: "曲线可视化编辑 (Curve Editor)",
-      presetLinear: "线性衰减",
+      presetLinear: "线性",
       presetSmooth: "平滑S型",
       presetFadeIn: "平滑淡入",
+      presetFadeOut: "平滑淡出",
       presetFlat: "恒定 1.0",
       addPoint: "+ 添加控制点",
       delPoint: "删除",
@@ -403,9 +404,10 @@ export const I18N = {
     activePropsCount: "Enabled Properties:",
     curveEditor: {
       title: "Interactive Curve Editor",
-      presetLinear: "Linear Falloff",
+      presetLinear: "Linear",
       presetSmooth: "Smooth S-Curve",
       presetFadeIn: "Smooth Fade-In",
+      presetFadeOut: "Smooth Fade-Out",
       presetFlat: "Flat 1.0",
       addPoint: "+ Add Control Point",
       delPoint: "Delete",

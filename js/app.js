@@ -616,10 +616,11 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     toolbar.innerHTML = `
       <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">${t.curveEditor.title}</span>
       <div class="flex items-center gap-1 text-[10px]">
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear" title="${state.lang === 'zh' ? '基于当前起止点生成线性衰减' : 'Generate linear falloff based on current endpoints'}">${t.curveEditor.presetLinear}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth" title="${state.lang === 'zh' ? '基于当前起止点生成平滑S型曲线' : 'Generate smooth S-curve based on current endpoints'}">${t.curveEditor.presetSmooth}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in" title="${state.lang === 'zh' ? '基于当前起止点生成平滑淡入曲线' : 'Generate smooth fade-in based on current endpoints'}">${t.curveEditor.presetFadeIn}</button>
-        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat" title="${state.lang === 'zh' ? '基于当前起止点生成恒定1.0' : 'Generate constant 1.0 based on current endpoints'}">${t.curveEditor.presetFlat}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear" title="${state.lang === 'zh' ? '在所有控制点之间应用线性连接' : 'Apply linear connection between all points'}">${t.curveEditor.presetLinear}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth" title="${state.lang === 'zh' ? '计算所有控制点并生成最佳平滑曲线' : 'Compute optimal smooth curve across all points'}">${t.curveEditor.presetSmooth}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in" title="${state.lang === 'zh' ? '生成平滑淡入曲线' : 'Generate smooth fade-in curve'}">${t.curveEditor.presetFadeIn}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_out" title="${state.lang === 'zh' ? '生成平滑淡出曲线' : 'Generate smooth fade-out curve'}">${t.curveEditor.presetFadeOut}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat" title="${state.lang === 'zh' ? '保持所有X端点并设为恒定1.0' : 'Set constant 1.0 across all points'}">${t.curveEditor.presetFlat}</button>
       </div>
     `;
 
@@ -633,7 +634,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     // Tip
     const tipEl = document.createElement("div");
     tipEl.className = "text-[10px] text-gray-400 dark:text-gray-500 flex justify-between";
-    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>预设基于起止端点自适应生成</span>`;
+    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>预设自适应计算所有控制点</span>`;
 
     // Table Container
     const tableWrap = document.createElement("div");

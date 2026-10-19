@@ -178,8 +178,8 @@ export function sampleCurve(xValue, points) {
  */
 export const CURVE_PRESETS = {
   linear: [
-    [0.0, 1.0, -0.001, -0.001, 2, 3],
-    [1000.0, 0.0, -0.001, -0.001, 1, 1]
+    [0.0, 1.0, -0.001, -0.001, 0, 0],
+    [1000.0, 0.0, -0.001, -0.001, 0, 0]
   ],
   smooth: [
     [0.0, 1.0, 0.0, 0.0, 2, 3],
@@ -190,6 +190,10 @@ export const CURVE_PRESETS = {
   fade_in: [
     [0.0, 0.0, 0.0, 0.0, 2, 3],
     [1.0, 1.0, 0.0, 0.0, 1, 1]
+  ],
+  fade_out: [
+    [0.0, 1.0, 0.0, 0.0, 2, 3],
+    [1.0, 0.0, 0.0, 0.0, 1, 1]
   ],
   flat: [
     [0.0, 1.0, 0.0, 0.0, 2, 3],
@@ -208,117 +212,261 @@ function roundFloat(val, maxDecimals = 3) {
 }
 
 /**
- * Generate curve points dynamically based on the provided XY endpoints,
- * rather than hardcoding static templates.
+ * Compute optimal smooth tangents across arbitrary control points
+ * using Fritsch-Carlson Monotone Cubic Hermite Spline (PCHIP).
+ * Guarantees zero overshoot/ringing while creating a natural, optimal C1 curve.
+ */
+function computePchipTangents(points) {
+  const n = points.length;
+  const tangents = new Array(n).fill(0);
+  if (n <= 1) return tangents;
+
+  // 1. Calculate secants between adjacent points
+  const deltas = [];
+  const h = [];
+  for (let i = 0; i < n - 1; i++) {
+    const dx = points[i + 1][0] - points[i][0];
+    const dy = points[i + 1][1] - points[i][1];
+    h.push(dx);
+    deltas.push(dx !== 0 ? dy / dx : 0);
+  }
+
+  // 2. Boundary tangents: horizontal (0) for natural smooth start and landing
+  tangents[0] = 0.0;
+  tangents[n - 1] = 0.0;
+
+  // 3. Interior tangents: weighted harmonic mean of adjacent secants
+  for (let i = 1; i < n - 1; i++) {
+    const d0 = deltas[i - 1];
+    const d1 = deltas[i];
+    if (d0 * d1 <= 0) {
+      // Local extremum (peak/valley) or flat segment: horizontal tangent
+      tangents[i] = 0.0;
+    } else {
+      const w1 = 2 * h[i] + h[i - 1];
+      const w2 = h[i] + 2 * h[i - 1];
+      tangents[i] = (w1 + w2) / (w1 / d0 + w2 / d1);
+    }
+  }
+
+  return tangents;
+}
+
+/**
+ * Generate curve points dynamically based on all provided control points.
+ * - linear: preserves all points, connects every consecutive pair linearly
+ * - smooth:
+ *     - If 2 points: generates optimal 4-point S-curve
+ *     - If >= 3 points: calculates optimal smooth Hermite tangents across ALL points
+ * - fade_in: smooth fade-in curve from 0 to 1 across all points
+ * - fade_out: smooth fade-out curve from 1 to 0 across all points
+ * - flat: sets Y=1.0 across all points
  *
- * @param {string} presetKey - "linear" | "smooth" | "fade_in" | "flat"
+ * @param {string} presetKey - "linear" | "smooth" | "fade_in" | "fade_out" | "flat"
  * @param {Array<Array<number>>} currentPoints - existing curve control points
  * @returns {Array<Array<number>>}
  */
 export function generateCurveFromEndpoints(presetKey, currentPoints = []) {
-  let x0 = 0.0;
-  let x1 = 1000.0;
-  let y0 = 1.0;
-  let y1 = 0.0;
-
-  if (Array.isArray(currentPoints) && currentPoints.length >= 2) {
-    const sorted = [...currentPoints].sort((a, b) => Number(a[0]) - Number(b[0]));
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
-
-    x0 = Number(first[0]) || 0;
-    x1 = Number(last[0]);
-    if (isNaN(x1)) x1 = x0 + 1000.0;
-
-    y0 = Number(first[1]);
-    if (isNaN(y0)) y0 = 1.0;
-
-    y1 = Number(last[1]);
-    if (isNaN(y1)) y1 = 0.0;
-  } else if (Array.isArray(currentPoints) && currentPoints.length === 1) {
-    const pt = currentPoints[0];
-    x0 = Number(pt[0]) || 0;
-    x1 = x0 + (x0 >= 10 ? 1000.0 : 1.0);
-    y0 = Number(pt[1]) ?? 1.0;
-    y1 = 0.0;
+  // Normalize, clone, and ensure sorted by X
+  let pts = [];
+  if (Array.isArray(currentPoints) && currentPoints.length > 0) {
+    pts = currentPoints
+      .map(p => [
+        Number(p[0]) || 0,
+        Number(p[1]) || 0,
+        Number(p[2]) || 0,
+        Number(p[3]) || 0,
+        Number(p[4]) || 0,
+        Number(p[5]) || 0
+      ])
+      .sort((a, b) => a[0] - b[0]);
   }
 
-  // Ensure positive span
-  if (x1 <= x0) {
-    x1 = x0 + (x0 >= 10 ? 1000.0 : 1.0);
+  // Fallbacks if insufficient points
+  if (pts.length === 0) {
+    pts = [
+      [0.0, 1.0, -0.001, -0.001, 0, 0],
+      [1000.0, 0.0, -0.001, -0.001, 0, 0]
+    ];
+  } else if (pts.length === 1) {
+    const x0 = pts[0][0];
+    const span = x0 >= 10 ? 1000.0 : 1.0;
+    pts = [
+      [x0, pts[0][1], -0.001, -0.001, 0, 0],
+      [x0 + span, 0.0, -0.001, -0.001, 0, 0]
+    ];
   }
 
-  const dx = x1 - x0;
+  const n = pts.length;
+  const x0 = pts[0][0];
+  const xEnd = pts[n - 1][0];
+  const spanX = xEnd > x0 ? xEnd - x0 : (x0 >= 10 ? 1000.0 : 1.0);
 
   switch (presetKey) {
     case "linear": {
-      // Linear falloff: decay from startY to endY
-      let startY = y0;
-      let endY = y1;
-      if (startY === endY) {
-        startY = startY > 0 ? startY : 1.0;
-        endY = 0.0;
+      // Connect each consecutive pair of points strictly linearly
+      // For each segment i, slope = (y_{i+1} - y_i) / (x_{i+1} - x_i)
+      const secants = [];
+      for (let i = 0; i < n - 1; i++) {
+        const dx = pts[i + 1][0] - pts[i][0];
+        const dy = pts[i + 1][1] - pts[i][1];
+        secants.push(dx !== 0 ? Number((dy / dx).toFixed(6)) : 0);
       }
-      const dy = endY - startY;
-      const slope = Number((dy / dx).toFixed(6));
-      return [
-        [roundFloat(x0), roundFloat(startY), slope, slope, 2, 3],
-        [roundFloat(x1), roundFloat(endY), slope, slope, 1, 1]
-      ];
+
+      return pts.map((p, i) => {
+        let slopeLeft = 0;
+        let slopeRight = 0;
+        if (i === 0) {
+          slopeLeft = secants[0] ?? 0;
+          slopeRight = secants[0] ?? 0;
+        } else if (i === n - 1) {
+          slopeLeft = secants[n - 2] ?? 0;
+          slopeRight = secants[n - 2] ?? 0;
+        } else {
+          slopeLeft = secants[i - 1] ?? 0;
+          slopeRight = secants[i] ?? 0;
+        }
+        return [
+          roundFloat(p[0]),
+          roundFloat(p[1]),
+          slopeLeft,
+          slopeRight,
+          0, // modeLeft: linear in CS2
+          0  // modeRight: linear in CS2
+        ];
+      });
     }
 
     case "smooth": {
-      // Smooth S-Curve: 4-point Hermite spline adapting to descending falloff or ascending rise
-      let startY = y0;
-      let endY = y1;
-      if (startY === endY) {
-        startY = startY > 0 ? startY : 1.0;
-        endY = 0.0;
-      }
-      const dy = endY - startY;
+      // Smooth curve preset:
+      // If user only has 2 points, generate optimal 4-point S-curve
+      // If user has >= 3 points, keep ALL points and compute optimal smooth tangents
+      if (n === 2) {
+        let startY = pts[0][1];
+        let endY = pts[1][1];
+        if (startY === endY) {
+          startY = startY > 0 ? startY : 1.0;
+          endY = 0.0;
+        }
+        const dy = endY - startY;
 
-      if (dy < 0) {
-        // Acoustic falloff profile (high nearby, steep drop mid-distance, gradual tail)
-        const slopeMid1 = Number(((dy / dx) * 1.25).toFixed(6));
-        const slopeMid2 = Number(((dy / dx) * 0.35).toFixed(6));
-        return [
-          [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
-          [roundFloat(x0 + dx * 0.16), roundFloat(startY + dy * 0.20), slopeMid1, slopeMid1, 3, 1],
-          [roundFloat(x0 + dx * 0.60), roundFloat(startY + dy * 0.90), slopeMid2, slopeMid2, 3, 1],
-          [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
-        ];
-      } else {
-        // Ascending ease-in-out S-curve
-        const slopeMid = Number(((dy / dx) * 1.5).toFixed(6));
-        return [
-          [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
-          [roundFloat(x0 + dx * 0.35), roundFloat(startY + dy * 0.18), slopeMid, slopeMid, 3, 1],
-          [roundFloat(x0 + dx * 0.65), roundFloat(startY + dy * 0.82), slopeMid, slopeMid, 3, 1],
-          [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
-        ];
+        if (dy < 0) {
+          // Acoustic falloff profile (high nearby, steep drop mid-distance, gradual tail)
+          const slopeMid1 = Number(((dy / spanX) * 1.25).toFixed(6));
+          const slopeMid2 = Number(((dy / spanX) * 0.35).toFixed(6));
+          return [
+            [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
+            [roundFloat(x0 + spanX * 0.16), roundFloat(startY + dy * 0.20), slopeMid1, slopeMid1, 3, 1],
+            [roundFloat(x0 + spanX * 0.60), roundFloat(startY + dy * 0.90), slopeMid2, slopeMid2, 3, 1],
+            [roundFloat(xEnd), roundFloat(endY), 0.0, 0.0, 1, 1]
+          ];
+        } else {
+          // Ascending ease-in-out S-curve
+          const slopeMid = Number(((dy / spanX) * 1.5).toFixed(6));
+          return [
+            [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
+            [roundFloat(x0 + spanX * 0.35), roundFloat(startY + dy * 0.18), slopeMid, slopeMid, 3, 1],
+            [roundFloat(x0 + spanX * 0.65), roundFloat(startY + dy * 0.82), slopeMid, slopeMid, 3, 1],
+            [roundFloat(xEnd), roundFloat(endY), 0.0, 0.0, 1, 1]
+          ];
+        }
       }
+
+      // n >= 3: Calculate optimal smooth tangents across ALL points with zero overshoot
+      const tangents = computePchipTangents(pts);
+      return pts.map((p, i) => {
+        const s = roundFloat(tangents[i], 6);
+        let mLeft = 1; // spline
+        let mRight = 1;
+        if (i === 0) {
+          mLeft = 2;
+          mRight = 3; // horizontal start
+        } else if (i === n - 1) {
+          mLeft = 1;
+          mRight = 1; // horizontal landing
+        } else if (s === 0) {
+          mLeft = 3;
+          mRight = 3;
+        }
+        return [
+          roundFloat(p[0]),
+          roundFloat(p[1]),
+          s,
+          s,
+          mLeft,
+          mRight
+        ];
+      });
     }
 
     case "fade_in": {
-      // Smooth fade-in: start low (or 0), end high (or 1)
-      let startY = y0;
-      let endY = y1;
-      if (startY >= endY) {
-        startY = 0.0;
-        endY = endY > 0 ? endY : 1.0;
+      // Smooth fade-in (0.0 -> 1.0)
+      if (n === 2) {
+        return [
+          [roundFloat(x0), 0.0, 0.0, 0.0, 2, 3],
+          [roundFloat(xEnd), 1.0, 0.0, 0.0, 1, 1]
+        ];
       }
-      return [
-        [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
-        [roundFloat(x1), roundFloat(endY), 0.0, 0.0, 1, 1]
-      ];
+
+      return pts.map((p, i) => {
+        if (i === 0) return [roundFloat(x0), 0.0, 0.0, 0.0, 2, 3];
+        if (i === n - 1) return [roundFloat(xEnd), 1.0, 0.0, 0.0, 1, 1];
+
+        const t = (p[0] - x0) / spanX;
+        const yVal = roundFloat(3 * t * t - 2 * t * t * t);
+        const slope = Number((6 * t * (1 - t) / spanX).toFixed(6));
+        return [
+          roundFloat(p[0]),
+          yVal,
+          slope,
+          slope,
+          1,
+          1
+        ];
+      });
+    }
+
+    case "fade_out": {
+      // Smooth fade-out (1.0 -> 0.0)
+      if (n === 2) {
+        return [
+          [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3],
+          [roundFloat(xEnd), 0.0, 0.0, 0.0, 1, 1]
+        ];
+      }
+
+      return pts.map((p, i) => {
+        if (i === 0) return [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3];
+        if (i === n - 1) return [roundFloat(xEnd), 0.0, 0.0, 0.0, 1, 1];
+
+        const t = (p[0] - x0) / spanX;
+        const yVal = roundFloat(1.0 - (3 * t * t - 2 * t * t * t));
+        const slope = Number((-6 * t * (1 - t) / spanX).toFixed(6));
+        return [
+          roundFloat(p[0]),
+          yVal,
+          slope,
+          slope,
+          1,
+          1
+        ];
+      });
     }
 
     case "flat": {
-      // Constant 1.0 across the domain
-      return [
-        [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3],
-        [roundFloat(x1), 1.0, 0.0, 0.0, 1, 1]
-      ];
+      // Constant 1.0 across all points
+      return pts.map((p, i) => {
+        const mLeft = i === 0 ? 2 : 1;
+        const mRight = i === 0 ? 3 : 1;
+        return [
+          roundFloat(p[0]),
+          1.0,
+          0.0,
+          0.0,
+          mLeft,
+          mRight
+        ];
+      });
     }
 
     default:
