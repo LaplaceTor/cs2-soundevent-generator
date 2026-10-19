@@ -121,8 +121,7 @@ export function normalizeVsndPath(pathStr) {
 export function serializeSoundEvent(eventName, properties, options = {}) {
   const {
     includeComments = false,
-    lang = "zh",
-    customProperties = []
+    lang = "zh"
   } = options;
 
   const validName = (eventName || "SoundEvent_Custom").trim() || "SoundEvent_Custom";
@@ -147,29 +146,6 @@ export function serializeSoundEvent(eventName, properties, options = {}) {
 
     const formattedVal = formatKv3Value(key, val, spec);
     lines.push(`\t${key} = ${formattedVal}`);
-  }
-
-  // Output custom properties
-  if (Array.isArray(customProperties) && customProperties.length > 0) {
-    for (const item of customProperties) {
-      if (!item.key || !item.key.trim()) continue;
-      const k = item.key.trim();
-      let v = item.value;
-
-      // Smart parse scalar
-      let formatted = `"${v}"`;
-      if (v === "true" || v === "false") {
-        formatted = v;
-      } else if (!isNaN(Number(v)) && v.trim() !== "") {
-        let s = Number(v).toString();
-        formatted = s.includes(".") ? s : s + ".0";
-      }
-
-      if (includeComments && item.comment) {
-        lines.push(`\t// ${item.comment}`);
-      }
-      lines.push(`\t${k} = ${formatted}`);
-    }
   }
 
   lines.push("}");
@@ -205,7 +181,6 @@ export function parseKv3SoundEvent(text) {
   }
 
   const properties = {};
-  const customProperties = [];
 
   let i = 0;
   while (i < body.length) {
@@ -290,15 +265,12 @@ export function parseKv3SoundEvent(text) {
 
     if (SPECS[key]) {
       properties[key] = parsedVal;
-    } else {
-      customProperties.push({ key, value: String(parsedVal) });
     }
   }
 
   return {
     eventName: eventName || "SoundEvent_Custom",
-    properties,
-    customProperties
+    properties
   };
 }
 
@@ -486,7 +458,6 @@ export function formatKv3Text(text, options = {}) {
   const isSnippet = !text.includes("<!-- kv3");
   const formatted = serializeSoundEvent(result.data.eventName, result.data.properties, {
     isSnippet,
-    customProperties: result.data.customProperties,
     ...options
   });
   return { success: true, code: formatted };

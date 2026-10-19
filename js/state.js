@@ -12,7 +12,6 @@ export class SoundEventState {
     this.eventName = "SoundEvent_Custom.3D";
     this.enabledProperties = new Set();
     this.propertyValues = {};
-    this.customProperties = []; // [{ key: "", value: "" }]
     this.includeComments = false;
     this.lang = "zh"; // 'zh' or 'en'
     this.theme = "dark"; // 'dark' or 'light'
@@ -72,23 +71,6 @@ export class SoundEventState {
     this.notify();
   }
 
-  addCustomProperty(key = "", value = "") {
-    this.customProperties.push({ key, value });
-    this.notify();
-  }
-
-  removeCustomProperty(index) {
-    this.customProperties.splice(index, 1);
-    this.notify();
-  }
-
-  updateCustomProperty(index, key, value) {
-    if (this.customProperties[index]) {
-      this.customProperties[index] = { key, value };
-      this.notify();
-    }
-  }
-
   getActiveProperties() {
     const result = {};
     for (const key of this.enabledProperties) {
@@ -111,9 +93,6 @@ export class SoundEventState {
       this.enabledProperties.add(k);
       this.propertyValues[k] = v;
     }
-    if (parsed.customProperties && parsed.customProperties.length > 0) {
-      this.customProperties = parsed.customProperties;
-    }
     this.notify();
     return true;
   }
@@ -123,8 +102,7 @@ export class SoundEventState {
   exportSharePayload() {
     const payload = {
       n: this.eventName,
-      p: this.getActiveProperties(),
-      c: this.customProperties.filter(i => i.key.trim() !== "")
+      p: this.getActiveProperties()
     };
     const jsonStr = JSON.stringify(payload);
     const bytes = new TextEncoder().encode(jsonStr);
@@ -157,7 +135,6 @@ export class SoundEventState {
           this.propertyValues[k] = v;
         }
       }
-      this.customProperties = Array.isArray(data.c) ? data.c : [];
       this.notify();
       return true;
     } catch (e) {
@@ -172,7 +149,6 @@ export class SoundEventState {
         eventName: this.eventName,
         enabled: Array.from(this.enabledProperties),
         values: this.propertyValues,
-        custom: this.customProperties,
         includeComments: this.includeComments,
         lang: this.lang,
         theme: this.theme
@@ -203,7 +179,6 @@ export class SoundEventState {
         this.enabledProperties = new Set(data.enabled);
       }
       if (data.values) this.propertyValues = data.values;
-      if (Array.isArray(data.custom)) this.customProperties = data.custom;
       if (typeof data.includeComments === "boolean") this.includeComments = data.includeComments;
       if (data.lang) this.lang = data.lang;
       if (data.theme) this.theme = data.theme;

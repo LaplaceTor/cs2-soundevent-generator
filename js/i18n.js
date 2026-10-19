@@ -41,10 +41,6 @@ export const I18N = {
     collapseAll: "折叠全部",
     includeComments: "输出附带属性中文注释",
     activePropsCount: "已启用属性：",
-    customSectionTitle: "自定义键值 (Custom KV)",
-    addCustomProp: "+ 添加自定义键值",
-    customKeyPlaceholder: "键名 (如 my_custom_tag)",
-    customValuePlaceholder: '数值或字符串 (如 1.5, true 或 "hello")',
     curveEditor: {
       title: "曲线可视化编辑 (Curve Editor)",
       presetLinear: "线性衰减",
@@ -83,8 +79,7 @@ export const I18N = {
     "mixer": "混音器与控制台变量 (Mixer & Convar)",
     "music": "CS2 音乐堆栈 (Music)",
     "files": "音频文件资源 (Audio Files)",
-    "advanced": "高级/深度调优 (Advanced)",
-    "custom": "自定义键值 (Custom)"
+    "advanced": "高级/深度调优 (Advanced)"
 },
     labels: {
     "type": "声音操作堆栈类型 (Type)",
@@ -406,10 +401,6 @@ export const I18N = {
     collapseAll: "Collapse All",
     includeComments: "Include Property Explanations as Comments",
     activePropsCount: "Enabled Properties:",
-    customSectionTitle: "Custom Key-Values (Custom KV)",
-    addCustomProp: "+ Add Custom Property",
-    customKeyPlaceholder: "Key name (e.g. my_custom_tag)",
-    customValuePlaceholder: 'Value (e.g. 1.5, true, or "hello")',
     curveEditor: {
       title: "Interactive Curve Editor",
       presetLinear: "Linear Falloff",
@@ -448,8 +439,7 @@ export const I18N = {
     "mixer": "Mixer & Convar",
     "music": "Music",
     "files": "Audio Files",
-    "advanced": "Advanced",
-    "custom": "Custom"
+    "advanced": "Advanced"
 },
     labels: {
     "type": "type",

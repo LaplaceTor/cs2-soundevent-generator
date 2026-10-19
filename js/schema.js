@@ -67,14 +67,10 @@ export const GROUPS = [
   [
     "advanced",
     "Advanced"
-  ],
-  [
-    "custom",
-    "Custom"
   ]
 ];
 
-export const COLLAPSED_BY_DEFAULT = new Set(["custom", "advanced"]);
+export const COLLAPSED_BY_DEFAULT = new Set(["advanced"]);
 
 export const SPECS = {
   "type": {

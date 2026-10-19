@@ -7,7 +7,7 @@ import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRE
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
-import { drawCurveCanvas, CURVE_PRESETS } from "./curve.js";
+import { drawCurveCanvas, attachInteractiveCurve, CURVE_PRESETS } from "./curve.js";
 import { Kv3Autocomplete } from "./autocomplete.js";
 
 // Global App State
@@ -117,10 +117,7 @@ function updateGroupBadge(groupId) {
   const badge = document.querySelector(`[data-group-badge="${groupId}"]`);
   if (!badge) return;
   const propsInGroup = Object.entries(SPECS).filter(([_, s]) => s.group === groupId);
-  let activeCount = propsInGroup.filter(([k]) => state.enabledProperties.has(k)).length;
-  if (groupId === "custom") {
-    activeCount += state.customProperties.filter(i => i.key.trim() !== "").length;
-  }
+  const activeCount = propsInGroup.filter(([k]) => state.enabledProperties.has(k)).length;
   badge.textContent = `${activeCount} / ${propsInGroup.length}`;
   if (activeCount > 0) {
     badge.className = "text-[10px] font-mono px-1.5 py-0.2 bg-black text-white dark:bg-white dark:text-black rounded-none";
@@ -138,7 +135,6 @@ function renderGroups() {
 
   // Filter groups
   const visibleGroups = GROUPS.filter(([groupId]) => {
-    if (groupId === "custom") return true;
     const props = Object.entries(SPECS).filter(([_, spec]) => spec.group === groupId);
     return props.length > 0;
   });
@@ -171,25 +167,13 @@ function renderGroups() {
     const activeCountInGroup = props.filter(p => state.enabledProperties.has(p.key)).length;
 
     // 1. If filtering active only, hide any group with zero active properties
-    if (filterActiveOnly) {
-      if (groupId === "custom") {
-        if (state.customProperties.length === 0) continue;
-      } else if (activeCountInGroup === 0) {
-        continue;
-      }
+    if (filterActiveOnly && activeCountInGroup === 0) {
+      continue;
     }
 
     // 2. If searching, hide groups with zero matching properties
-    if (filterSearch) {
-      if (groupId === "custom") {
-        const matchesCustom = state.customProperties.some(
-          cp => cp.key.toLowerCase().includes(filterSearch.toLowerCase()) || 
-                cp.value.toLowerCase().includes(filterSearch.toLowerCase())
-        );
-        if (!matchesCustom && visibleProps.length === 0) continue;
-      } else if (visibleProps.length === 0) {
-        continue;
-      }
+    if (filterSearch && visibleProps.length === 0) {
+      continue;
     }
 
     const groupSection = document.createElement("div");
@@ -239,31 +223,6 @@ function renderGroups() {
       body.appendChild(row);
     });
 
-    // Custom properties if group is 'custom'
-    if (groupId === "custom") {
-      const customWrap = document.createElement("div");
-      customWrap.className = "p-4 space-y-2 bg-gray-50/30 dark:bg-gray-900/20";
-
-      state.customProperties.forEach((item, idx) => {
-        const customRow = document.createElement("div");
-        customRow.className = "flex items-center gap-2";
-        customRow.innerHTML = `
-          <input type="text" class="w-1/3 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white" placeholder="${t.customKeyPlaceholder}" value="${item.key}" data-idx="${idx}" data-field="key">
-          <input type="text" class="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white" placeholder="${t.customValuePlaceholder}" value="${item.value}" data-idx="${idx}" data-field="value">
-          <button class="px-2 py-1 text-gray-400 hover:text-red-500 transition-colors" data-idx="${idx}" data-action="del-custom">✕</button>
-        `;
-        customWrap.appendChild(customRow);
-      });
-
-      const addBtn = document.createElement("button");
-      addBtn.className = "mt-2 px-2.5 py-1 text-xs border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors";
-      addBtn.textContent = t.addCustomProp;
-      addBtn.addEventListener("click", () => state.addCustomProperty());
-      customWrap.appendChild(addBtn);
-
-      body.appendChild(customWrap);
-    }
-
     groupSection.appendChild(header);
     groupSection.appendChild(body);
     groupsFrag.appendChild(groupSection);
@@ -276,25 +235,6 @@ function renderGroups() {
   if (activeFilterBadge) {
     activeFilterBadge.textContent = state.enabledProperties.size;
   }
-
-  // Attach custom property events
-  groupsContainer.querySelectorAll("[data-action='del-custom']").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const idx = Number(e.target.getAttribute("data-idx"));
-      state.removeCustomProperty(idx);
-    });
-  });
-
-  groupsContainer.querySelectorAll("input[data-field]").forEach(input => {
-    input.addEventListener("input", (e) => {
-      const idx = Number(e.target.getAttribute("data-idx"));
-      const field = e.target.getAttribute("data-field");
-      const item = state.customProperties[idx];
-      if (item) {
-        state.updateCustomProperty(idx, field === "key" ? e.target.value : item.key, field === "value" ? e.target.value : item.value);
-      }
-    });
-  });
 }
 
 /**
@@ -666,7 +606,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
 
   // 7. Interactive Curve Editor
   if (kind === "curve") {
-    const curvePoints = Array.isArray(val) ? val : CURVE_PRESETS.linear;
+    let curvePoints = Array.isArray(val) ? JSON.parse(JSON.stringify(val)) : JSON.parse(JSON.stringify(CURVE_PRESETS.linear));
     const wrap = document.createElement("div");
     wrap.className = "space-y-2 border border-gray-200 dark:border-gray-800 p-2.5 rounded";
 
@@ -676,100 +616,152 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     toolbar.innerHTML = `
       <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">${t.curveEditor.title}</span>
       <div class="flex items-center gap-1 text-[10px]">
-        <button class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear">${t.curveEditor.presetLinear}</button>
-        <button class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth">${t.curveEditor.presetSmooth}</button>
-        <button class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in">${t.curveEditor.presetFadeIn}</button>
-        <button class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat">${t.curveEditor.presetFlat}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="linear">${t.curveEditor.presetLinear}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="smooth">${t.curveEditor.presetSmooth}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="fade_in">${t.curveEditor.presetFadeIn}</button>
+        <button type="button" class="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded" data-cpreset="flat">${t.curveEditor.presetFlat}</button>
       </div>
     `;
 
-    toolbar.querySelectorAll("[data-cpreset]").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const presetKey = e.target.getAttribute("data-cpreset");
-        if (CURVE_PRESETS[presetKey]) {
-          onUserEdit(JSON.parse(JSON.stringify(CURVE_PRESETS[presetKey])));
-        }
-      });
-    });
-
-    // Canvas
+    // Canvas Element Wrap
+    const canvasWrap = document.createElement("div");
+    canvasWrap.className = "relative w-full h-36 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-950 overflow-hidden";
     const canvas = document.createElement("canvas");
-    canvas.className = "w-full h-32 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-950";
-    canvas.width = 600;
-    canvas.height = 160;
+    canvas.className = "w-full h-full block touch-none select-none";
+    canvasWrap.appendChild(canvas);
 
-    setTimeout(() => {
-      drawCurveCanvas(canvas, curvePoints);
-    }, 0);
+    // Tip
+    const tipEl = document.createElement("div");
+    tipEl.className = "text-[10px] text-gray-400 dark:text-gray-500 flex justify-between";
+    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>X: 距离/时间 | Y: 音量倍率</span>`;
 
-    // Table
+    // Table Container
     const tableWrap = document.createElement("div");
     tableWrap.className = "max-h-40 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded";
     const table = document.createElement("table");
     table.className = "curve-table w-full table-fixed";
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th style="width: 17%">X</th>
-          <th style="width: 16%">Y</th>
-          <th style="width: 18%">左斜</th>
-          <th style="width: 18%">右斜</th>
-          <th style="width: 12%">左模</th>
-          <th style="width: 12%">右模</th>
-          <th style="width: 7%"></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${curvePoints.map((pt, pIdx) => `
-          <tr>
-            <td><input class="curve-cell-input" type="number" step="1" value="${pt[0]}" data-pidx="${pIdx}" data-c="0"></td>
-            <td><input class="curve-cell-input" type="number" step="0.1" value="${pt[1]}" data-pidx="${pIdx}" data-c="1"></td>
-            <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[2]}" data-pidx="${pIdx}" data-c="2"></td>
-            <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[3]}" data-pidx="${pIdx}" data-c="3"></td>
-            <td><input class="curve-cell-input" type="number" step="1" min="0" max="4" value="${pt[4]}" data-pidx="${pIdx}" data-c="4"></td>
-            <td><input class="curve-cell-input" type="number" step="1" min="0" max="4" value="${pt[5]}" data-pidx="${pIdx}" data-c="5"></td>
-            <td><button class="px-1 text-gray-400 hover:text-red-500" data-del-pt="${pIdx}">✕</button></td>
-          </tr>
-        `).join("")}
-      </tbody>
-    `;
-
-    table.querySelectorAll(".curve-cell-input").forEach(cell => {
-      cell.addEventListener("change", (e) => {
-        const pIdx = Number(e.target.getAttribute("data-pidx"));
-        const col = Number(e.target.getAttribute("data-c"));
-        const newPts = JSON.parse(JSON.stringify(curvePoints));
-        newPts[pIdx][col] = parseFloat(e.target.value) || 0;
-        newPts.sort((a, b) => a[0] - b[0]);
-        onUserEdit(newPts);
-      });
-    });
-
-    table.querySelectorAll("[data-del-pt]").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        if (curvePoints.length <= 2) {
-          showToast(state.lang === "zh" ? "曲线必须保留至少 2 个控制点" : "Curve must have at least 2 points");
-          return;
-        }
-        const pIdx = Number(e.target.getAttribute("data-del-pt"));
-        const newPts = curvePoints.filter((_, i) => i !== pIdx);
-        onUserEdit(newPts);
-      });
-    });
-
     tableWrap.appendChild(table);
 
+    // Add Point Button
     const addPtBtn = document.createElement("button");
-    addPtBtn.className = "mt-1 px-2 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors";
-    addPtBtn.textContent = t.curveEditor.addPoint;
-    addPtBtn.addEventListener("click", () => {
-      const lastPt = curvePoints[curvePoints.length - 1] || [0, 0, 0, 0, 2, 3];
-      const newPts = [...curvePoints, [lastPt[0] + 500, lastPt[1], 0, 0, 2, 3]];
-      onUserEdit(newPts);
+    addPtBtn.type = "button";
+    addPtBtn.className = "mt-1 px-2.5 py-1 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors";
+    addPtBtn.textContent = t.curveEditor.addPoint || "+ 添加控制点";
+
+    // Interactive Controller
+    let interactiveCtrl = null;
+
+    function renderTableRows() {
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="width: 18%">X</th>
+            <th style="width: 16%">Y</th>
+            <th style="width: 17%">左斜</th>
+            <th style="width: 17%">右斜</th>
+            <th style="width: 13%">左模</th>
+            <th style="width: 13%">右模</th>
+            <th style="width: 6%"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${curvePoints.map((pt, pIdx) => `
+            <tr>
+              <td><input class="curve-cell-input" type="number" step="1" value="${pt[0]}" data-pidx="${pIdx}" data-c="0"></td>
+              <td><input class="curve-cell-input" type="number" step="0.05" value="${pt[1]}" data-pidx="${pIdx}" data-c="1"></td>
+              <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[2]}" data-pidx="${pIdx}" data-c="2"></td>
+              <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[3]}" data-pidx="${pIdx}" data-c="3"></td>
+              <td><input class="curve-cell-input" type="number" step="1" min="0" max="4" value="${pt[4]}" data-pidx="${pIdx}" data-c="4"></td>
+              <td><input class="curve-cell-input" type="number" step="1" min="0" max="4" value="${pt[5]}" data-pidx="${pIdx}" data-c="5"></td>
+              <td><button type="button" class="px-1 text-gray-400 hover:text-red-500 font-bold" data-del-pt="${pIdx}" title="删除此控制点">✕</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+
+      // Cell change / input listeners
+      table.querySelectorAll(".curve-cell-input").forEach(cell => {
+        const handler = (e) => {
+          const pIdx = Number(e.target.getAttribute("data-pidx"));
+          const col = Number(e.target.getAttribute("data-c"));
+          curvePoints[pIdx][col] = parseFloat(e.target.value) || 0;
+          if (col === 0) {
+            curvePoints.sort((a, b) => a[0] - b[0]);
+          }
+          if (interactiveCtrl) interactiveCtrl.redraw();
+          onUserEdit(curvePoints);
+        };
+        cell.addEventListener("change", handler);
+      });
+
+      // Delete point listeners
+      table.querySelectorAll("[data-del-pt]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          if (curvePoints.length <= 2) {
+            showToast(state.lang === "zh" ? "曲线必须保留至少 2 个控制点" : "Curve must have at least 2 points");
+            return;
+          }
+          const pIdx = Number(e.target.getAttribute("data-del-pt"));
+          curvePoints.splice(pIdx, 1);
+          renderTableRows();
+          if (interactiveCtrl) interactiveCtrl.redraw();
+          onUserEdit(curvePoints);
+        });
+      });
+    }
+
+    // Live update table inputs while dragging point on canvas
+    function syncTableFromLiveDrag(pts, activeIdx) {
+      const trs = table.querySelectorAll("tbody tr");
+      if (trs[activeIdx]) {
+        const inputs = trs[activeIdx].querySelectorAll("input");
+        if (inputs[0]) inputs[0].value = pts[activeIdx][0];
+        if (inputs[1]) inputs[1].value = pts[activeIdx][1];
+      }
+    }
+
+    // Attach interactive canvas with ResizeObserver and Pointer events
+    interactiveCtrl = attachInteractiveCurve(canvas, {
+      getPoints: () => curvePoints,
+      onLiveUpdate: (pts, activeIdx) => {
+        syncTableFromLiveDrag(pts, activeIdx);
+      },
+      onPointsChange: (pts) => {
+        curvePoints = pts;
+        renderTableRows();
+        onUserEdit(curvePoints);
+      }
     });
 
+    // Preset button clicks
+    toolbar.querySelectorAll("[data-cpreset]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const presetKey = e.target.getAttribute("data-cpreset");
+        if (CURVE_PRESETS[presetKey]) {
+          curvePoints = JSON.parse(JSON.stringify(CURVE_PRESETS[presetKey]));
+          renderTableRows();
+          if (interactiveCtrl) interactiveCtrl.redraw();
+          onUserEdit(curvePoints);
+        }
+      });
+    });
+
+    // Add Point Click
+    addPtBtn.addEventListener("click", () => {
+      const lastPt = curvePoints[curvePoints.length - 1] || [0, 0, 0, 0, 2, 3];
+      const newPts = [...curvePoints, [Math.round(lastPt[0] + 500), Number(lastPt[1].toFixed(2)), 0, 0, 2, 3]];
+      newPts.sort((a, b) => a[0] - b[0]);
+      curvePoints = newPts;
+      renderTableRows();
+      if (interactiveCtrl) interactiveCtrl.redraw();
+      onUserEdit(curvePoints);
+    });
+
+    renderTableRows();
+
     wrap.appendChild(toolbar);
-    wrap.appendChild(canvas);
+    wrap.appendChild(canvasWrap);
+    wrap.appendChild(tipEl);
     wrap.appendChild(tableWrap);
     wrap.appendChild(addPtBtn);
     container.appendChild(wrap);
@@ -939,10 +931,6 @@ function syncLeftControlsFromParsed(data) {
     }
   }
 
-  if (Array.isArray(data.customProperties)) {
-    state.customProperties = data.customProperties;
-  }
-
   // Auto-expand groups that have active properties
   GROUPS.forEach(([gid]) => {
     const hasActive = Object.entries(SPECS).some(([k, s]) => s.group === gid && state.enabledProperties.has(k));
@@ -1056,8 +1044,7 @@ function updateOutput(force = false) {
   if (!force && document.activeElement === codeEditor) return;
   const code = serializeSoundEvent(state.eventName, state.getActiveProperties(), {
     includeComments: state.includeComments,
-    lang: state.lang,
-    customProperties: state.customProperties
+    lang: state.lang
   });
   if (codeEditor) {
     codeEditor.value = code;

@@ -200,15 +200,17 @@ export const CURVE_PRESETS = {
 /**
  * Render Curve onto HTML5 Canvas with HiDPI / scaling support
  */
-export function drawCurveCanvas(canvas, rawPoints, xLabel = "X", yLabel = "Y") {
-  if (!canvas || typeof canvas.getContext !== "function") return;
+export function drawCurveCanvas(canvas, rawPoints, options = {}) {
+  if (!canvas || typeof canvas.getContext !== "function") return null;
   const ctx = canvas.getContext("2d");
 
-  const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  const width = Math.round(rect.width) || 600;
-  const height = Math.round(rect.height) || 160;
+  const width = Math.round(rect.width);
+  const height = Math.round(rect.height) || 144;
 
+  if (width <= 0) return null;
+
+  const dpr = window.devicePixelRatio || 1;
   if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -216,44 +218,43 @@ export function drawCurveCanvas(canvas, rawPoints, xLabel = "X", yLabel = "Y") {
 
   ctx.save();
   ctx.scale(dpr, dpr);
-
-  // Clear
   ctx.clearRect(0, 0, width, height);
 
   const FONT_CANVAS = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', sans-serif";
 
   if (!rawPoints || rawPoints.length < 2) {
     ctx.fillStyle = "#888";
-    ctx.font = `13px ${FONT_CANVAS}`;
-    ctx.fillText("Need at least 2 control points", 20, 30);
+    ctx.font = `12px ${FONT_CANVAS}`;
+    ctx.fillText("需要至少 2 个控制点 (Need at least 2 points)", 20, 30);
     ctx.restore();
-    return;
+    return null;
   }
 
-  // Deep copy and sort
   const points = rawPoints.map(p => new CurvePoint(p[0], p[1], p[2], p[3], p[4], p[5]))
     .sort((a, b) => a.xValue - b.xValue);
 
   setupAllCurveValues(points);
 
-  const minX = points[0].xValue;
-  const maxX = Math.max(points[points.length - 1].xValue, minX + 0.001);
+  const minX = Math.min(0, points[0].xValue);
+  const maxX = Math.max(points[points.length - 1].xValue, minX + 1.0);
   const minY = Math.min(0, ...points.map(p => p.yValue));
   const maxY = Math.max(1.0, ...points.map(p => p.yValue));
 
-  const padL = 45;
+  const padL = 40;
   const padR = 20;
-  const padT = 20;
-  const padB = 30;
+  const padT = 16;
+  const padB = 24;
 
-  const plotW = width - padL - padR;
-  const plotH = height - padT - padB;
+  const plotW = Math.max(10, width - padL - padR);
+  const plotH = Math.max(10, height - padT - padB);
 
   const toScreenX = (x) => padL + ((x - minX) / (maxX - minX)) * plotW;
   const toScreenY = (y) => padT + (1 - (y - minY) / (maxY - minY)) * plotH;
+  const toDataX = (sx) => minX + ((sx - padL) / plotW) * (maxX - minX);
+  const toDataY = (sy) => minY + (1 - ((sy - padT) / plotH)) * (maxY - minY);
 
   // Background grid
-  ctx.strokeStyle = "rgba(128, 128, 128, 0.15)";
+  ctx.strokeStyle = "rgba(128, 128, 128, 0.18)";
   ctx.lineWidth = 1;
 
   for (let i = 0; i <= 4; i++) {
@@ -264,9 +265,10 @@ export function drawCurveCanvas(canvas, rawPoints, xLabel = "X", yLabel = "Y") {
     ctx.lineTo(width - padR, sy);
     ctx.stroke();
 
-    ctx.fillStyle = "rgba(160, 160, 160, 0.8)";
-    ctx.font = `10px ${FONT_CANVAS}`;
-    ctx.fillText(yVal.toFixed(1), 8, sy + 3);
+    ctx.fillStyle = "rgba(156, 163, 175, 0.9)";
+    ctx.font = `9px ${FONT_CANVAS}`;
+    ctx.textAlign = "right";
+    ctx.fillText(yVal.toFixed(1), padL - 6, sy + 3);
   }
 
   for (let i = 0; i <= 4; i++) {
@@ -277,14 +279,15 @@ export function drawCurveCanvas(canvas, rawPoints, xLabel = "X", yLabel = "Y") {
     ctx.lineTo(sx, height - padB);
     ctx.stroke();
 
-    ctx.fillStyle = "rgba(160, 160, 160, 0.8)";
-    ctx.font = `10px ${FONT_CANVAS}`;
-    ctx.fillText(Math.round(xVal).toString(), sx - 10, height - 12);
+    ctx.fillStyle = "rgba(156, 163, 175, 0.9)";
+    ctx.font = `9px ${FONT_CANVAS}`;
+    ctx.textAlign = "center";
+    ctx.fillText(Math.round(xVal).toString(), sx, height - 8);
   }
 
   // Draw curve line
-  ctx.strokeStyle = "#4a83c9";
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#3B82F6";
+  ctx.lineWidth = 2.2;
   ctx.beginPath();
 
   const steps = 150;
@@ -299,19 +302,199 @@ export function drawCurveCanvas(canvas, rawPoints, xLabel = "X", yLabel = "Y") {
   ctx.stroke();
 
   // Draw control points
+  const activeIdx = options.activeIdx ?? -1;
+  const hoverIdx = options.hoverIdx ?? -1;
+
   points.forEach((p, idx) => {
     const sx = toScreenX(p.xValue);
     const sy = toScreenY(p.yValue);
+    const isActive = (idx === activeIdx);
+    const isHover = (idx === hoverIdx);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#4a83c9";
-    ctx.lineWidth = 2.5;
+    // Halo ring if active
+    if (isActive) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 12, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(59, 130, 246, 0.25)";
+      ctx.fill();
+    }
 
     ctx.beginPath();
-    ctx.arc(sx, sy, 5.5, 0, Math.PI * 2);
+    ctx.arc(sx, sy, isActive ? 7.5 : (isHover ? 6.5 : 5), 0, Math.PI * 2);
+    ctx.fillStyle = isActive ? "#2563EB" : (isHover ? "#93C5FD" : "#FFFFFF");
     ctx.fill();
+    ctx.lineWidth = isActive ? 2.5 : 2;
+    ctx.strokeStyle = isActive ? "#1D4ED8" : "#2563EB";
     ctx.stroke();
+
+    // Tooltip coordinate pill
+    if (isActive || isHover) {
+      const tipText = `(${Math.round(p.xValue)}, ${p.yValue.toFixed(2)})`;
+      ctx.font = `10px ${FONT_CANVAS}`;
+      const textW = ctx.measureText(tipText).width;
+      const tipX = Math.max(padL, Math.min(width - padR - textW - 8, sx - textW / 2 - 4));
+      const tipY = Math.max(16, sy - 14);
+
+      ctx.fillStyle = "rgba(17, 24, 39, 0.88)";
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(tipX, tipY - 11, textW + 8, 14, 2);
+      } else {
+        ctx.rect(tipX, tipY - 11, textW + 8, 14);
+      }
+      ctx.fill();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "left";
+      ctx.fillText(tipText, tipX + 4, tipY);
+    }
   });
 
   ctx.restore();
+
+  return { toScreenX, toScreenY, toDataX, toDataY, padL, padR, padT, padB, plotW, plotH, minX, maxX, minY, maxY };
+}
+
+/**
+ * Attaches drag, hover, double-click and auto-resize observer to curve canvas
+ */
+export function attachInteractiveCurve(canvas, { getPoints, onPointsChange, onLiveUpdate }) {
+  let activeIdx = -1;
+  let hoverIdx = -1;
+  let currentTransformers = null;
+
+  function redraw() {
+    const pts = getPoints ? getPoints() : [];
+    currentTransformers = drawCurveCanvas(canvas, pts, { activeIdx, hoverIdx });
+  }
+
+  function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  function onPointerDown(e) {
+    if (!currentTransformers) redraw();
+    if (!currentTransformers) return;
+    const { toScreenX, toScreenY } = currentTransformers;
+    const pos = getMousePos(e);
+    const pts = getPoints ? getPoints() : [];
+
+    let hit = -1;
+    let minDist = 18;
+    pts.forEach((p, idx) => {
+      const sx = toScreenX(p[0]);
+      const sy = toScreenY(p[1]);
+      const dist = Math.hypot(sx - pos.x, sy - pos.y);
+      if (dist < minDist) {
+        minDist = dist;
+        hit = idx;
+      }
+    });
+
+    if (hit !== -1) {
+      activeIdx = hit;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      redraw();
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!currentTransformers) return;
+    const pos = getMousePos(e);
+    const pts = getPoints ? getPoints() : [];
+
+    if (activeIdx !== -1) {
+      const { toDataX, toDataY } = currentTransformers;
+      let newX = toDataX(pos.x);
+      let newY = toDataY(pos.y);
+
+      newX = Math.max(0, Math.round(newX));
+      newY = Math.max(0, Math.min(2.0, Math.round(newY * 100) / 100));
+
+      pts[activeIdx][0] = newX;
+      pts[activeIdx][1] = newY;
+
+      redraw();
+      if (onLiveUpdate) onLiveUpdate(pts, activeIdx);
+    } else {
+      const { toScreenX, toScreenY } = currentTransformers;
+      let hit = -1;
+      let minDist = 18;
+      pts.forEach((p, idx) => {
+        const sx = toScreenX(p[0]);
+        const sy = toScreenY(p[1]);
+        const dist = Math.hypot(sx - pos.x, sy - pos.y);
+        if (dist < minDist) {
+          minDist = dist;
+          hit = idx;
+        }
+      });
+
+      if (hit !== hoverIdx) {
+        hoverIdx = hit;
+        canvas.style.cursor = hoverIdx !== -1 ? "grab" : "crosshair";
+        redraw();
+      }
+    }
+  }
+
+  function onPointerUp(e) {
+    if (activeIdx !== -1) {
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+      activeIdx = -1;
+      const pts = getPoints ? getPoints() : [];
+      pts.sort((a, b) => a[0] - b[0]);
+      redraw();
+      if (onPointsChange) onPointsChange(pts);
+    }
+  }
+
+  function onDblClick(e) {
+    if (!currentTransformers) return;
+    const { toDataX, toDataY } = currentTransformers;
+    const pos = getMousePos(e);
+    const pts = getPoints ? getPoints() : [];
+
+    const newX = Math.max(0, Math.round(toDataX(pos.x)));
+    const newY = Math.max(0, Math.min(2.0, Math.round(toDataY(pos.y) * 100) / 100));
+
+    pts.push([newX, newY, 0, 0, 2, 3]);
+    pts.sort((a, b) => a[0] - b[0]);
+    redraw();
+    if (onPointsChange) onPointsChange(pts);
+  }
+
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerup", onPointerUp);
+  canvas.addEventListener("pointercancel", onPointerUp);
+  canvas.addEventListener("dblclick", onDblClick);
+
+  // ResizeObserver to automatically redraw when container size changes or accordion opens
+  const resizeTarget = canvas.parentElement || canvas;
+  const ro = new ResizeObserver(() => {
+    redraw();
+  });
+  ro.observe(resizeTarget);
+
+  requestAnimationFrame(() => redraw());
+
+  return {
+    redraw,
+    destroy() {
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
+      canvas.removeEventListener("dblclick", onDblClick);
+      ro.disconnect();
+    }
+  };
 }
