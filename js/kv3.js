@@ -290,30 +290,56 @@ export function validateKv3(text) {
   let lastOpenBraceLine = 1;
   let lastOpenBracketLine = 1;
   let hasEventHeader = false;
+  let inMultiLineComment = false;
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const lineNum = lineIdx + 1;
-    const rawLine = lines[lineIdx];
+    let rawLine = lines[lineIdx];
 
-    // Strip single line comment
-    let line = rawLine;
-    const commentIdx = line.indexOf("//");
-    if (commentIdx !== -1) {
-      line = line.substring(0, commentIdx);
+    // Handle multi-line block comments /* ... */
+    if (inMultiLineComment) {
+      const endCmt = rawLine.indexOf("*/");
+      if (endCmt !== -1) {
+        rawLine = rawLine.substring(endCmt + 2);
+        inMultiLineComment = false;
+      } else {
+        continue;
+      }
     }
+
+    while (rawLine.includes("/*")) {
+      const startCmt = rawLine.indexOf("/*");
+      const endCmt = rawLine.indexOf("*/", startCmt + 2);
+      if (endCmt !== -1) {
+        rawLine = rawLine.substring(0, startCmt) + rawLine.substring(endCmt + 2);
+      } else {
+        rawLine = rawLine.substring(0, startCmt);
+        inMultiLineComment = true;
+        break;
+      }
+    }
+
+    // Strip single line comment //
+    const commentIdx = rawLine.indexOf("//");
+    let line = commentIdx !== -1 ? rawLine.substring(0, commentIdx) : rawLine;
     line = line.trim();
     if (!line) continue;
 
-    // KV3 header comment
+    // KV3 encoding header line (e.g. <!-- kv3 ... -->)
     if (line.startsWith("<!--") || line.endsWith("-->")) continue;
 
-    // Check quotes on this line
+    // Check quotes and extract unquoted content
     let quoteChar = null;
     let inQuote = false;
+    let unquoted = "";
+
     for (let c = 0; c < line.length; c++) {
       const ch = line[c];
       if (ch === '"' || ch === "'") {
-        if (c > 0 && line[c - 1] === "\\") continue;
+        if (c > 0 && line[c - 1] === "\\") {
+          // escaped quote
+          continue;
+        }
         if (!inQuote) {
           inQuote = true;
           quoteChar = ch;
@@ -321,8 +347,13 @@ export function validateKv3(text) {
           inQuote = false;
           quoteChar = null;
         }
+        continue;
+      }
+      if (!inQuote) {
+        unquoted += ch;
       }
     }
+
     if (inQuote) {
       return {
         valid: false,
@@ -331,60 +362,132 @@ export function validateKv3(text) {
       };
     }
 
-    // Scan braces & brackets outside quotes
-    inQuote = false;
-    quoteChar = null;
-    for (let c = 0; c < line.length; c++) {
-      const ch = line[c];
-      if (ch === '"' || ch === "'") {
-        if (c > 0 && line[c - 1] === "\\") continue;
-        if (!inQuote) { inQuote = true; quoteChar = ch; }
-        else if (ch === quoteChar) { inQuote = false; quoteChar = null; }
-      }
-      if (!inQuote) {
-        if (ch === "{") {
-          braceDepth++;
-          lastOpenBraceLine = lineNum;
-        } else if (ch === "}") {
-          braceDepth--;
-          if (braceDepth < 0) {
-            return {
-              valid: false,
-              error: `第 ${lineNum} 行: 遇到多余的闭合大括号 '}' (Unexpected closing brace '}')`,
-              line: lineNum
-            };
-          }
-        } else if (ch === "[") {
-          bracketDepth++;
-          lastOpenBracketLine = lineNum;
-        } else if (ch === "]") {
-          bracketDepth--;
-          if (bracketDepth < 0) {
-            return {
-              valid: false,
-              error: `第 ${lineNum} 行: 遇到多余的闭合方括号 ']' (Unexpected closing bracket ']')`,
-              line: lineNum
-            };
-          }
+    // Check for stray semicolons (CS2 KV3 never uses ';')
+    if (unquoted.includes(";")) {
+      return {
+        valid: false,
+        error: `第 ${lineNum} 行: 遇到多余的分号 ';'，CS2 KV3 语法不使用分号 (Unexpected semicolon ';')`,
+        line: lineNum
+      };
+    }
+
+    // Check for consecutive dots '..' outside quotes
+    if (/\.\./.test(unquoted)) {
+      return {
+        valid: false,
+        error: `第 ${lineNum} 行: 遇到多余的点号 '..' (Unexpected consecutive dots '..')`,
+        line: lineNum
+      };
+    }
+
+    // Check for consecutive commas in arrays
+    if (/,\s*,/.test(unquoted)) {
+      return {
+        valid: false,
+        error: `第 ${lineNum} 行: 数组中存在多余的连续逗号 ',,' (Unexpected consecutive commas in array)`,
+        line: lineNum
+      };
+    }
+
+    // Check for leading comma right after opening bracket '[ ,'
+    if (/\[\s*,/.test(unquoted)) {
+      return {
+        valid: false,
+        error: `第 ${lineNum} 行: 数组起始处遇到多余的逗号 ',' (Unexpected leading comma after '[')`,
+        line: lineNum
+      };
+    }
+
+    // Check for multiple dots in numeric tokens (e.g. 1.0.0)
+    if (/\b\d+(\.\d+){2,}\b/.test(unquoted)) {
+      return {
+        valid: false,
+        error: `第 ${lineNum} 行: 数值格式错误，包含多个小数点 (Invalid number format with multiple decimal points)`,
+        line: lineNum
+      };
+    }
+
+    // Character-by-character scan on unquoted line
+    for (let i = 0; i < unquoted.length; i++) {
+      const ch = unquoted[i];
+
+      if (ch === "{") {
+        braceDepth++;
+        lastOpenBraceLine = lineNum;
+      } else if (ch === "}") {
+        braceDepth--;
+        if (braceDepth < 0) {
+          return {
+            valid: false,
+            error: `第 ${lineNum} 行: 遇到多余的闭合大括号 '}' (Unexpected closing brace '}')`,
+            line: lineNum
+          };
+        }
+      } else if (ch === "[") {
+        bracketDepth++;
+        lastOpenBracketLine = lineNum;
+      } else if (ch === "]") {
+        bracketDepth--;
+        if (bracketDepth < 0) {
+          return {
+            valid: false,
+            error: `第 ${lineNum} 行: 遇到多余的闭合方括号 ']' (Unexpected closing bracket ']')`,
+            line: lineNum
+          };
+        }
+      } else if (ch === ",") {
+        // Commas outside arrays are strictly forbidden in KV3!
+        if (bracketDepth === 0) {
+          return {
+            valid: false,
+            error: `第 ${lineNum} 行: 遇到多余的逗号 ','，对象属性间严禁使用逗号分隔 (Unexpected comma ',' outside array)`,
+            line: lineNum
+          };
+        }
+      } else if (ch === ".") {
+        // Outside quotes, a dot MUST be a decimal point preceded by digit and followed by digit
+        const prevChar = i > 0 ? unquoted[i - 1] : "";
+        const nextChar = i < unquoted.length - 1 ? unquoted[i + 1] : "";
+        const isPrevDigit = /\d/.test(prevChar);
+        const isNextDigit = /\d/.test(nextChar);
+        if (!isPrevDigit || !isNextDigit) {
+          return {
+            valid: false,
+            error: `第 ${lineNum} 行: 遇到多余或孤立的点号 '.'，浮点数必须包含整数位与小数位 (Unexpected stray dot '.')`,
+            line: lineNum
+          };
         }
       }
     }
 
-    // Key-Value syntax check inside event block
+    // Statement / assignment check inside event block
     if (braceDepth >= 1 && bracketDepth === 0) {
-      if (line !== "{" && line !== "}" && !line.startsWith("{") && !line.endsWith("}")) {
-        if (line.includes("=")) {
-          const parts = line.split("=");
-          const key = parts[0].trim().replace(/^["']|["']$/g, "");
-          const val = parts.slice(1).join("=").trim();
-          if (!key) {
+      const trimmedLine = unquoted.trim();
+      if (trimmedLine !== "{" && trimmedLine !== "}" && !trimmedLine.startsWith("{") && !trimmedLine.endsWith("}")) {
+        if (trimmedLine.includes("=")) {
+          const eqIdx = line.indexOf("=");
+          const keyPart = line.substring(0, eqIdx).trim();
+          const valPart = line.substring(eqIdx + 1).trim();
+
+          const cleanKey = keyPart.replace(/^["']|["']$/g, "").trim();
+          if (!cleanKey) {
             return {
               valid: false,
               error: `第 ${lineNum} 行: 赋值等号前缺少属性键名 (Missing property key before '=')`,
               line: lineNum
             };
           }
-          if (!val) {
+
+          // Key cannot contain stray symbols
+          if (!/^[a-zA-Z0-9_]+$/.test(cleanKey)) {
+            return {
+              valid: false,
+              error: `第 ${lineNum} 行: 属性键名 "${cleanKey}" 包含无效符号 (Invalid property key name "${cleanKey}")`,
+              line: lineNum
+            };
+          }
+
+          if (!valPart) {
             // Check if next non-empty line starts with '{' or '['
             let nextHasBracket = false;
             for (let n = lineIdx + 1; n < lines.length; n++) {
@@ -398,19 +501,19 @@ export function validateKv3(text) {
             if (!nextHasBracket) {
               return {
                 valid: false,
-                error: `第 ${lineNum} 行: 属性 "${key}" 缺少对应值 (Missing value for property "${key}")`,
+                error: `第 ${lineNum} 行: 属性 "${cleanKey}" 缺少对应值 (Missing value for property "${cleanKey}")`,
                 line: lineNum
               };
             }
           }
-        } else if (!line.startsWith("[") && !line.endsWith("]")) {
+        } else if (!trimmedLine.startsWith("[") && !trimmedLine.endsWith("]")) {
           // If it's the event name line, e.g. "Event_Name" =
           if (!hasEventHeader && (line.includes("{") || line.endsWith("="))) {
             hasEventHeader = true;
           } else {
             return {
               valid: false,
-              error: `第 ${lineNum} 行: 语法格式错误，非有效赋值语句 (Invalid statement on line ${lineNum})`,
+              error: `第 ${lineNum} 行: 语法格式错误，非有效赋值语句或存在多余符号 (Invalid statement or unexpected symbol on line ${lineNum})`,
               line: lineNum
             };
           }

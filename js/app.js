@@ -323,15 +323,17 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     }
   });
 
-  // Control Wrap (Always rendered)
-  const controlWrap = document.createElement("div");
-  controlWrap.className = "mt-2 pl-6";
-  renderControlWidget(controlWrap, key, spec, val, t, (newVal) => {
-    ensureEnabled();
-    state.setPropertyValue(key, newVal);
-    updateOutput();
-  });
-  row.appendChild(controlWrap);
+  // Control Wrap (Omit declaration box for vsnd_files and vsnd_files_track_01)
+  if (key !== "vsnd_files" && key !== "vsnd_files_track_01") {
+    const controlWrap = document.createElement("div");
+    controlWrap.className = "mt-2 pl-6";
+    renderControlWidget(controlWrap, key, spec, val, t, (newVal) => {
+      ensureEnabled();
+      state.setPropertyValue(key, newVal);
+      updateOutput();
+    });
+    row.appendChild(controlWrap);
+  }
 
   return row;
 }
@@ -556,38 +558,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 6. Audio File path (vsnd_files, vsnd_files_track_01)
-  if (kind === "files" || key === "vsnd_files_track_01" || key === "vsnd_files") {
-    let filePath = "";
-    if (Array.isArray(val)) {
-      filePath = val.length > 0 ? (val[0] || "") : "sounds/custom/new_sound.vsnd";
-    } else if (typeof val === "string" && val.trim()) {
-      filePath = val.trim();
-    } else {
-      filePath = "sounds/custom/new_sound.vsnd";
-    }
-
-    const fileInput = document.createElement("input");
-    fileInput.type = "text";
-    fileInput.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
-    fileInput.value = filePath;
-    fileInput.placeholder = "sounds/custom/new_sound.vsnd";
-
-    fileInput.addEventListener("input", (e) => {
-      onUserEdit(e.target.value);
-    });
-
-    fileInput.addEventListener("change", (e) => {
-      const normalized = normalizeVsndPath(e.target.value);
-      fileInput.value = normalized;
-      onUserEdit(normalized);
-    });
-
-    container.appendChild(fileInput);
-    return;
-  }
-
-  // 7. Interactive Curve Editor
+  // 6. Interactive Curve Editor
   if (kind === "curve") {
     let curvePoints = Array.isArray(val) ? JSON.parse(JSON.stringify(val)) : JSON.parse(JSON.stringify(CURVE_PRESETS.linear));
     const wrap = document.createElement("div");
