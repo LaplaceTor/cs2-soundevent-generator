@@ -62,9 +62,10 @@ export class SoundEventState {
         this.propertyValues[key] = JSON.parse(JSON.stringify(defaultVal));
       }
 
-      // If key is a parent toggle, automatically enable all dependent children
+      // If key is a parent toggle, automatically set to true and enable all dependent children
       const children = TOGGLE_DEPENDENTS[key];
       if (children) {
+        this.propertyValues[key] = true;
         for (const childKey of children) {
           this.enabledProperties.add(childKey);
           const cCur = this.propertyValues[childKey];
@@ -75,15 +76,11 @@ export class SoundEventState {
         }
       }
 
-      // If key is a child property, automatically enable its parent toggle
+      // If key is a child property, automatically enable its parent toggle and set it to true
       const parentKey = CHILD_TO_PARENT_MAP.get(key);
       if (parentKey) {
         this.enabledProperties.add(parentKey);
-        const pCur = this.propertyValues[parentKey];
-        if (!(parentKey in this.propertyValues) || pCur === undefined) {
-          const pDef = DEFAULTS[parentKey] !== undefined ? DEFAULTS[parentKey] : true;
-          this.propertyValues[parentKey] = JSON.parse(JSON.stringify(pDef));
-        }
+        this.propertyValues[parentKey] = true;
       }
 
       // Min-Max pair checkbox synchronization
@@ -103,14 +100,11 @@ export class SoundEventState {
         if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
           this.propertyValues[maxKey] = minVal;
         }
-        // If partner is a child, ensure its parent toggle is enabled
+        // If partner is a child, ensure its parent toggle is enabled and set to true
         const partnerParentKey = CHILD_TO_PARENT_MAP.get(pair.partner);
         if (partnerParentKey) {
           this.enabledProperties.add(partnerParentKey);
-          if (!(partnerParentKey in this.propertyValues) || this.propertyValues[partnerParentKey] === undefined) {
-            const ppDef = DEFAULTS[partnerParentKey] !== undefined ? DEFAULTS[partnerParentKey] : true;
-            this.propertyValues[partnerParentKey] = JSON.parse(JSON.stringify(ppDef));
-          }
+          this.propertyValues[partnerParentKey] = true;
         }
       }
     } else {
@@ -159,6 +153,39 @@ export class SoundEventState {
   setPropertyValue(key, val) {
     this.propertyValues[key] = val;
 
+    // If key is a parent toggle:
+    const children = TOGGLE_DEPENDENTS[key];
+    if (children) {
+      const isFalse = val === false || val === "false" || val === 0;
+      if (isFalse) {
+        // Automatically remove all child properties when parent toggle is turned FALSE
+        for (const childKey of children) {
+          this.enabledProperties.delete(childKey);
+          const childPair = MIN_MAX_MAP.get(childKey);
+          if (childPair) {
+            this.enabledProperties.delete(childPair.partner);
+          }
+        }
+      } else {
+        // Automatically re-enable all child properties when parent toggle is turned TRUE
+        for (const childKey of children) {
+          this.enabledProperties.add(childKey);
+          const cCur = this.propertyValues[childKey];
+          if (!(childKey in this.propertyValues) || cCur === undefined || (Array.isArray(cCur) && cCur.length === 0)) {
+            const cDef = DEFAULTS[childKey] !== undefined ? DEFAULTS[childKey] : (SPECS[childKey]?.kind === "bool" ? false : 0);
+            this.propertyValues[childKey] = JSON.parse(JSON.stringify(cDef));
+          }
+        }
+      }
+    }
+
+    // If key is a child property, editing it ensures parent toggle is TRUE and enabled
+    const parentKey = CHILD_TO_PARENT_MAP.get(key);
+    if (parentKey) {
+      this.enabledProperties.add(parentKey);
+      this.propertyValues[parentKey] = true;
+    }
+
     // Enforce min <= max constraint if key is part of a min/max pair
     const pair = MIN_MAX_MAP.get(key);
     if (pair) {
@@ -200,15 +227,25 @@ export class SoundEventState {
   }
 
   _enforceToggleDependenciesConsistency() {
+    for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
+      if (this.enabledProperties.has(parentKey)) {
+        const pVal = this.propertyValues[parentKey];
+        if (pVal === false || pVal === "false" || pVal === 0) {
+          // Parent is explicitly false: disable all its children
+          for (const ck of children) {
+            this.enabledProperties.delete(ck);
+            const cPair = MIN_MAX_MAP.get(ck);
+            if (cPair) this.enabledProperties.delete(cPair.partner);
+          }
+        }
+      }
+    }
+    // If any child is enabled, its parent MUST be enabled and set to true
     for (const key of Array.from(this.enabledProperties)) {
       const parentKey = CHILD_TO_PARENT_MAP.get(key);
-      if (parentKey && !this.enabledProperties.has(parentKey)) {
+      if (parentKey) {
         this.enabledProperties.add(parentKey);
-        const pCur = this.propertyValues[parentKey];
-        if (!(parentKey in this.propertyValues) || pCur === undefined) {
-          const pDef = DEFAULTS[parentKey] !== undefined ? DEFAULTS[parentKey] : true;
-          this.propertyValues[parentKey] = JSON.parse(JSON.stringify(pDef));
-        }
+        this.propertyValues[parentKey] = true;
       }
     }
   }

@@ -267,6 +267,21 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     }
   }
 
+  function syncBoolWidget(propKey, isTrue) {
+    const pRow = document.querySelector(`[data-prop-key="${propKey}"]`);
+    if (pRow) {
+      const btns = pRow.querySelectorAll("button");
+      btns.forEach(btn => {
+        const txt = btn.textContent.trim().toLowerCase();
+        if (txt === "true") {
+          btn.className = `px-2 py-0.5 rounded-sm transition-colors ${isTrue ? "bg-black text-white dark:bg-white dark:text-black font-semibold" : "text-gray-500 hover:text-black dark:hover:text-white"}`;
+        } else if (txt === "false") {
+          btn.className = `px-2 py-0.5 rounded-sm transition-colors ${!isTrue ? "bg-black text-white dark:bg-white dark:text-black font-semibold" : "text-gray-500 hover:text-black dark:hover:text-white"}`;
+        }
+      });
+    }
+  }
+
   function syncPartnerInputs(partnerKey) {
     const partnerVal = state.propertyValues[partnerKey];
     const pRow = document.querySelector(`[data-prop-key="${partnerKey}"]`);
@@ -347,10 +362,12 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
         syncPartnerInputs(pairInfo.partner);
       }
       if (children) {
+        syncBoolWidget(key, true);
         children.forEach(ck => setRowEnabledState(ck, true));
       }
       if (parentKey) {
         setRowEnabledState(parentKey, true);
+        syncBoolWidget(parentKey, true);
       }
       updateGroupBadge(spec.group);
       if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
@@ -363,6 +380,9 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     state.setPropertyEnabled(key, isNowChecked);
     if (isNowChecked) {
       row.classList.add("enabled");
+      if (children) {
+        syncBoolWidget(key, true);
+      }
       if (pairInfo) {
         setRowEnabledState(pairInfo.partner, true);
         syncPartnerInputs(pairInfo.partner);
@@ -376,6 +396,7 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       }
       if (parentKey) {
         setRowEnabledState(parentKey, true);
+        syncBoolWidget(parentKey, true);
       }
     } else {
       row.classList.remove("enabled");
@@ -410,6 +431,20 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       state.setPropertyValue(key, newVal);
       if (pairInfo) {
         syncPartnerInputs(pairInfo.partner);
+      }
+      if (children) {
+        const isFalse = newVal === false || newVal === "false" || newVal === 0;
+        children.forEach(ck => {
+          setRowEnabledState(ck, !isFalse);
+          const cPair = MIN_MAX_MAP.get(ck);
+          if (cPair) setRowEnabledState(cPair.partner, !isFalse);
+        });
+        if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
+        if (filterActiveOnly) renderGroups();
+      }
+      if (parentKey) {
+        setRowEnabledState(parentKey, true);
+        syncBoolWidget(parentKey, true);
       }
       updateOutput();
     });
