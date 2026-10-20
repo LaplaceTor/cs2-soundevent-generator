@@ -559,7 +559,20 @@ export function drawCurveCanvas(canvas, rawPoints, options = {}) {
     ctx.fillStyle = "rgba(156, 163, 175, 0.9)";
     ctx.font = `9px ${FONT_CANVAS}`;
     ctx.textAlign = "center";
-    ctx.fillText(Math.round(xVal).toString(), sx, height - 8);
+
+    // Adaptive format for X grid label
+    const span = maxX - minX;
+    let label = "";
+    if (span <= 1.5) {
+      label = xVal.toFixed(2);
+    } else if (span <= 10) {
+      label = xVal.toFixed(1);
+    } else if (span <= 50) {
+      label = Number(xVal.toFixed(1)).toString();
+    } else {
+      label = Math.round(xVal).toString();
+    }
+    ctx.fillText(label, sx, height - 8);
   }
 
   // Draw curve line
@@ -606,7 +619,18 @@ export function drawCurveCanvas(canvas, rawPoints, options = {}) {
 
     // Tooltip coordinate pill
     if (isActive || isHover) {
-      const tipText = `(${Math.round(p.xValue)}, ${p.yValue.toFixed(2)})`;
+      const span = maxX - minX;
+      let xDisplay = "";
+      if (span <= 1.5) {
+        xDisplay = p.xValue.toFixed(3).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1");
+      } else if (span <= 10) {
+        xDisplay = p.xValue.toFixed(2).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1");
+      } else if (span <= 50) {
+        xDisplay = p.xValue.toFixed(1).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1");
+      } else {
+        xDisplay = Math.round(p.xValue).toString();
+      }
+      const tipText = `(${xDisplay}, ${p.yValue.toFixed(2)})`;
       ctx.font = `10px ${FONT_CANVAS}`;
       const textW = ctx.measureText(tipText).width;
       const tipX = Math.max(padL, Math.min(width - padR - textW - 8, sx - textW / 2 - 4));
@@ -690,7 +714,22 @@ export function attachInteractiveCurve(canvas, { getPoints, onPointsChange, onLi
       let newX = toDataX(pos.x);
       let newY = toDataY(pos.y);
 
-      newX = Math.max(0, Math.round(newX));
+      // Adaptive X rounding based on curve span to support fractional seconds
+      const minPtX = pts[0]?.[0] || 0;
+      const maxPtX = pts[pts.length - 1]?.[0] || 1;
+      const span = Math.max(0.1, maxPtX - minPtX);
+
+      if (span <= 1.5) {
+        newX = Math.round(newX * 100) / 100; // 0.01 step for 0-1 range
+      } else if (span <= 10) {
+        newX = Math.round(newX * 20) / 20;   // 0.05 step
+      } else if (span <= 50) {
+        newX = Math.round(newX * 10) / 10;   // 0.1 step
+      } else {
+        newX = Math.round(newX);             // 1.0 step for large distance
+      }
+
+      newX = Math.max(0, newX);
       newY = Math.max(0, Math.min(2.0, Math.round(newY * 100) / 100));
 
       pts[activeIdx][0] = newX;
@@ -739,7 +778,23 @@ export function attachInteractiveCurve(canvas, { getPoints, onPointsChange, onLi
     const pos = getMousePos(e);
     const pts = getPoints ? getPoints() : [];
 
-    const newX = Math.max(0, Math.round(toDataX(pos.x)));
+    const rawX = toDataX(pos.x);
+    const minPtX = pts[0]?.[0] || 0;
+    const maxPtX = pts[pts.length - 1]?.[0] || 1;
+    const span = Math.max(0.1, maxPtX - minPtX);
+
+    let newX = rawX;
+    if (span <= 1.5) {
+      newX = Math.round(rawX * 100) / 100;
+    } else if (span <= 10) {
+      newX = Math.round(rawX * 20) / 20;
+    } else if (span <= 50) {
+      newX = Math.round(rawX * 10) / 10;
+    } else {
+      newX = Math.round(rawX);
+    }
+    newX = Math.max(0, newX);
+
     const newY = Math.max(0, Math.min(2.0, Math.round(toDataY(pos.y) * 100) / 100));
 
     pts.push([newX, newY, 0, 0, 2, 3]);
@@ -775,3 +830,152 @@ export function attachInteractiveCurve(canvas, { getPoints, onPointsChange, onLi
     }
   };
 }
+
+/**
+ * Physical numerical attribute definitions for all CS2 soundevent curves.
+ * Maps property name to concise X (input) and Y (output) labels and full hover tooltips.
+ */
+export const CURVE_AXIS_DEFINITIONS = {
+  distance_volume_mapping_curve: {
+    x_zh: "空间距离",
+    y_zh: "音量衰减倍率",
+    x_en: "Distance",
+    y_en: "Volume Multiplier",
+    desc_x_zh: "听者与声源距离 (Hammer 单位)",
+    desc_y_zh: "音量衰减倍率 (0.0 静音 ~ 1.0 原音)",
+    desc_x_en: "Distance (Hammer Units)",
+    desc_y_en: "Volume Multiplier (0.0 Mute ~ 1.0 Full)",
+  },
+  distance_unfiltered_stereo_mapping_curve: {
+    x_zh: "空间距离",
+    y_zh: "立体声扩散比",
+    x_en: "Distance",
+    y_en: "Stereo Spread",
+    desc_x_zh: "听者与声源距离 (Hammer 单位)",
+    desc_y_zh: "未滤波立体声混合比 (0.0 点源 ~ 1.0 全扩散)",
+    desc_x_en: "Distance (Hammer Units)",
+    desc_y_en: "Unfiltered Stereo Mix (0.0 Point ~ 1.0 Full Spread)",
+  },
+  distance_pitch_mapping_curve: {
+    x_zh: "空间距离",
+    y_zh: "音调倍率",
+    x_en: "Distance",
+    y_en: "Pitch Multiplier",
+    desc_x_zh: "听者与声源距离 (Hammer 单位)",
+    desc_y_zh: "音调倍率 (1.0 标准音高，>1 升调，<1 降调)",
+    desc_x_en: "Distance (Hammer Units)",
+    desc_y_en: "Pitch Multiplier (1.0 Normal, >1 Higher, <1 Lower)",
+  },
+  distance_effect_mix_mapping_curve: {
+    x_zh: "空间距离",
+    y_zh: "效果发送比",
+    x_en: "Distance",
+    y_en: "Effect Mix",
+    desc_x_zh: "听者与声源距离 (Hammer 单位)",
+    desc_y_zh: "音效发送混合比 (0.0 干声 ~ 1.0 满湿声)",
+    desc_x_en: "Distance (Hammer Units)",
+    desc_y_en: "Effect Mix Amount (0.0 Dry ~ 1.0 Wet)",
+  },
+  time_volume_mapping_curve: {
+    x_zh: "播放时间",
+    y_zh: "音量包络倍率",
+    x_en: "Playback Time",
+    y_en: "Volume Envelope",
+    desc_x_zh: "起播累计时间 (秒)",
+    desc_y_zh: "包络音量倍率 (0.0 静音 ~ 1.0 原音)",
+    desc_x_en: "Playback Elapsed Time (Seconds)",
+    desc_y_en: "Envelope Volume Multiplier (0.0 Mute ~ 1.0 Full)",
+  },
+  time_unfiltered_stereo_mapping_curve: {
+    x_zh: "播放时间",
+    y_zh: "立体声扩散比",
+    x_en: "Playback Time",
+    y_en: "Stereo Spread",
+    desc_x_zh: "起播累计时间 (秒)",
+    desc_y_zh: "未滤波立体声混合比 (0.0 点源 ~ 1.0 全扩散)",
+    desc_x_en: "Playback Elapsed Time (Seconds)",
+    desc_y_en: "Unfiltered Stereo Mix (0.0 Point ~ 1.0 Full Spread)",
+  },
+  time_mixlayer_amount_curve: {
+    x_zh: "播放时间",
+    y_zh: "混音层强度",
+    x_en: "Playback Time",
+    y_en: "Mixlayer Amount",
+    desc_x_zh: "起播累计时间 (秒)",
+    desc_y_zh: "混音层发送强度 (0.0 关闭 ~ 1.0 峰值)",
+    desc_x_en: "Playback Elapsed Time (Seconds)",
+    desc_y_en: "Mixlayer Send Amount (0.0 Off ~ 1.0 Peak)",
+  },
+  fadetime_volume_mapping_curve: {
+    x_zh: "淡出耗时",
+    y_zh: "音量衰减倍率",
+    x_en: "Fade Time",
+    y_en: "Volume Multiplier",
+    desc_x_zh: "停止后淡出耗时 (秒)",
+    desc_y_zh: "淡出音量倍率 (1.0 开始淡出 ~ 0.0 静音)",
+    desc_x_en: "Fade Elapsed Time (Seconds)",
+    desc_y_en: "Fade Volume Multiplier (1.0 Start ~ 0.0 Mute)",
+  },
+  fadetime_pitch_mapping_curve: {
+    x_zh: "淡出耗时",
+    y_zh: "音调倍率",
+    x_en: "Fade Time",
+    y_en: "Pitch Multiplier",
+    desc_x_zh: "停止后淡出耗时 (秒)",
+    desc_y_zh: "淡出音调倍率 (1.0 标准音高)",
+    desc_x_en: "Fade Elapsed Time (Seconds)",
+    desc_y_en: "Fade Pitch Multiplier (1.0 Normal)",
+  },
+  velocity_volume_curve: {
+    x_zh: "移动速度",
+    y_zh: "音量倍率",
+    x_en: "Velocity",
+    y_en: "Volume Multiplier",
+    desc_x_zh: "声源移动速度 (Hammer 单位/秒)",
+    desc_y_zh: "速度关联音量增益倍率",
+    desc_x_en: "Entity Velocity (Hammer Units/sec)",
+    desc_y_en: "Velocity Volume Gain Multiplier",
+  },
+  impact_speed_input_volume_mapping_curve: {
+    x_zh: "冲击速度",
+    y_zh: "音量倍率",
+    x_en: "Impact Speed",
+    y_en: "Volume Multiplier",
+    desc_x_zh: "物理碰撞相对冲击速度 (单位/秒)",
+    desc_y_zh: "碰撞响应音量倍率 (0.0 无声 ~ 1.0 满音量)",
+    desc_x_en: "Collision Impact Speed (Units/sec)",
+    desc_y_en: "Impact Volume Multiplier (0.0 Mute ~ 1.0 Full)",
+  },
+  occlusion_path_curve: {
+    x_zh: "传播路径距离",
+    y_zh: "阻挡系数",
+    x_en: "Path Distance",
+    y_en: "Occlusion Factor",
+    desc_x_zh: "几何衍射传播路径距离 (Hammer 单位)",
+    desc_y_zh: "阻挡衰减系数 (0.0 无遮挡 ~ 1.0 完全阻隔)",
+    desc_x_en: "Diffraction Path Distance (Hammer Units)",
+    desc_y_en: "Occlusion Factor (0.0 Clear ~ 1.0 Blocked)",
+  }
+};
+
+/**
+ * Returns localized X and Y axis physical descriptions for a given curve property.
+ */
+export function getCurveAxisInfo(propKey, lang = "zh") {
+  const def = CURVE_AXIS_DEFINITIONS[propKey];
+  if (def) {
+    return {
+      x: lang === "zh" ? def.x_zh : def.x_en,
+      y: lang === "zh" ? def.y_zh : def.y_en,
+      descX: lang === "zh" ? (def.desc_x_zh || def.x_zh) : (def.desc_x_en || def.x_en),
+      descY: lang === "zh" ? (def.desc_y_zh || def.y_zh) : (def.desc_y_en || def.y_en)
+    };
+  }
+  return {
+    x: lang === "zh" ? "输入参数" : "Input",
+    y: lang === "zh" ? "输出数值" : "Output",
+    descX: lang === "zh" ? "输入参数 (X 轴自变量)" : "Input Parameter (X Axis)",
+    descY: lang === "zh" ? "输出倍率 / 系数 (Y 轴因变量)" : "Output Value / Ratio (Y Axis)"
+  };
+}
+

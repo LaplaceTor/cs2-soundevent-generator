@@ -89,9 +89,7 @@ export const SPECS = {
   "base": {
     "kind": "base",
     "group": "general",
-    "options": {
-      "objects": []
-    }
+    "options": {}
   },
   "value": {
     "kind": "float",
@@ -204,15 +202,9 @@ export const SPECS = {
     }
   },
   "ducking_bypass": {
-    "kind": "float",
+    "kind": "float_bool",
     "group": "playback",
-    "options": {
-      "slider_range": [
-        0,
-        1
-      ],
-      "only_positive": true
-    }
+    "options": {}
   },
   "preload_vsnds": {
     "kind": "bool",
@@ -536,7 +528,7 @@ export const SPECS = {
     "options": {
       "slider_range": [
         0,
-        10
+        2.0
       ],
       "only_positive": true
     }
@@ -574,7 +566,7 @@ export const SPECS = {
     "options": {
       "slider_range": [
         0,
-        10
+        1.0
       ],
       "only_positive": true
     }
@@ -654,15 +646,9 @@ export const SPECS = {
     }
   },
   "dsp_bypass": {
-    "kind": "float",
+    "kind": "float_bool",
     "group": "dsp",
-    "options": {
-      "slider_range": [
-        0,
-        1
-      ],
-      "only_positive": true
-    }
+    "options": {}
   },
   "enable_child_events": {
     "kind": "bool",
@@ -729,7 +715,7 @@ export const SPECS = {
     "options": {
       "slider_range": [
         0,
-        100
+        16
       ],
       "only_positive": true
     }
@@ -936,15 +922,9 @@ export const SPECS = {
     "options": {}
   },
   "sync_action_to_startround": {
-    "kind": "float",
+    "kind": "int_bool",
     "group": "music",
-    "options": {
-      "slider_range": [
-        0,
-        60
-      ],
-      "only_positive": true
-    }
+    "options": {}
   },
   "startpoint_01": {
     "kind": "float",
@@ -1145,15 +1125,9 @@ export const SPECS = {
     "options": {}
   },
   "source_soundscape": {
-    "kind": "float",
+    "kind": "string",
     "group": "advanced",
-    "options": {
-      "slider_range": [
-        0,
-        100
-      ],
-      "only_positive": true
-    }
+    "options": {}
   },
   "uiposition": {
     "kind": "vector3",
@@ -1338,7 +1312,7 @@ export const SPECS = {
     "options": {}
   },
   "use_mode_music_volume": {
-    "kind": "bool",
+    "kind": "string_bool",
     "group": "music",
     "options": {}
   },
@@ -1369,7 +1343,7 @@ export const DEFAULTS = {
   "ambient_entity_name": "",
   "vsnd_selection_type": "random",
   "vsnd_weights": [0.8, 0.2],
-  "use_mode_music_volume": true,
+  "use_mode_music_volume": "true",
   "_auto_calc_vnsd_duration_": false,
   "metadata": ["meta"],
   "randomize_position_min_radius": 2000,
@@ -1381,7 +1355,7 @@ export const DEFAULTS = {
   "reverb_wet": 1.0,
   "occlusion_frequency_scale": 1.0,
   "vsnd_duration": 10,
-  "source_soundscape": 1,
+  "source_soundscape": "",
   "block_duration": 0.0,
   "block_distance": 0.0,
   "instance_limit": 0.0,
@@ -1483,7 +1457,7 @@ export const DEFAULTS = {
   "soundevent_01": "",
   "mixgroup": "Amb_Common",
   "type": "csgo_mega",
-  "base": "amb.base",
+  "base": "",
   "set_mixlayer_layer": "PlayerAttackerFeedbackLayer",
   "block_other_name": "DeathHeadShotArmor",
   "volume_convar": "snd_surf_volume_slide",
@@ -1798,7 +1772,6 @@ export const DEFAULTS = {
   "voice_looped_culling_update_time": 0.25,
   "randomize_start_time": false,
   "restart_startpoint_03": 2.05,
-  "source_soundscape": 0,
   "retrigger_keepalive_override": 0.0
 };
 
@@ -2063,8 +2036,8 @@ export const TYPE_DESCRIPTIONS = {
   csgo_ambient: {
     name_zh: '地图实体多段环境声景 (csgo_ambient)',
     name_en: 'Entity Ambience Soundscape (csgo_ambient)',
-    desc_zh: '多段式实体环境音效。专用于绑定地图环境实体 (snd_ambient_entity)，常用于水流、瀑布、风道管道或大型机械轰鸣等具有复杂多段内外距离衰减、空间回响与位置随机化的地图环境声景。',
-    desc_en: 'Multi-stage entity ambience stack. Dedicated to map ambient entities (snd_ambient_entity) such as waterfalls, wind tunnels, vents, or mechanical hums requiring complex multi-range attenuation curves, spatial reverb, and position randomization.'
+    desc_zh: '多段式实体环境音效。通过 ambient_entity_name 绑定地图中的发声实体（如 snd_event_orientedbox、snd_event_sphere 或 snd_event_point 等），常用于水流、瀑布、风道管道或大型机械轰鸣等具有复杂多段内外距离衰减、空间回响与位置随机化的地图环境声景。',
+    desc_en: 'Multi-stage entity ambience stack. Binds via ambient_entity_name to map sound entities (such as snd_event_orientedbox, snd_event_sphere, or snd_event_point), ideal for waterfalls, wind tunnels, vents, or mechanical hums requiring complex multi-range attenuation curves, spatial reverb, and position randomization.'
   },
   csgo_surf: {
     name_zh: '滑坡与表面物理运动 (csgo_surf)',
@@ -2156,18 +2129,6 @@ export const MIXGROUPS = [
   "ArmsRace",
   "All",
   "Exceptions"
-];
-
-export const COMMON_BASE_EVENTS = [
-  { value: 'Base.Footstep', desc_zh: '通用脚步音效基类', desc_en: 'Base for footstep audio' },
-  { value: 'Base.Land', desc_zh: '落地缓冲音效基类', desc_en: 'Base for player landing' },
-  { value: 'amb.base', desc_zh: '通用环境音效基类', desc_en: 'Base for ambient sounds' },
-  { value: 'base.rush.bg', desc_zh: 'Rush 地图环境背景基类', desc_en: 'Rush map ambient background base' },
-  { value: 'Base.Weapon', desc_zh: '武器音效基类', desc_en: 'Base for weapon audio' },
-  { value: 'Base.RainExterior', desc_zh: '室外雨声环境基类', desc_en: 'Base for exterior rain' },
-  { value: 'UI.Base', desc_zh: 'UI/菜单音效基类', desc_en: 'Base for UI sounds' },
-  { value: 'Physics.Base', desc_zh: '物理碰撞基类', desc_en: 'Base for physics sounds' },
-  { value: 'Damage.Base', desc_zh: '受击伤害音效基类', desc_en: 'Base for damage sounds' }
 ];
 
 export const PRESETS = {
@@ -2342,7 +2303,7 @@ export const PRESETS = {
       mixgroup: 'Amb_Common',
       reverb_wet: 1.0,
       use_ambient_entity_position: true,
-      ambient_entity_name: 'snd_ambient_entity',
+      ambient_entity_name: 'snd_subway_waterfall_sides',
       use_distance_volume_mapping_curve: true,
       distance_volume_mapping_curve: [
         [50.0, 1.0, 0.0, 0.0, 2, 3],
@@ -2367,7 +2328,7 @@ export const PRESETS = {
       volume_random_max: 0.05,
       mixgroup: 'Rush',
       use_ambient_entity_position: true,
-      ambient_entity_name: 'snd_ambient_entity',
+      ambient_entity_name: 'snd_subway_waterfall_sides',
       position: [0.0, 0.0, 0.0],
       position_relative_to_player: false,
       randomize_start_time: true,

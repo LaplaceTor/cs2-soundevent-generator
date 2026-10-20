@@ -19,6 +19,18 @@ export function formatKv3Value(key, val, spec) {
     return typeof val === "boolean" ? (val ? '"true"' : '"false"') : (val ? `"${val}"` : '"false"');
   }
 
+  if (kind === "float_bool") {
+    // Boolean flag represented as 1.0 or 0.0 in KV3 (e.g. ducking_bypass, dsp_bypass)
+    const isTrue = val === true || val === 1 || val === 1.0 || val === "1.0" || val === "1" || val === "true";
+    return isTrue ? "1.0" : "0.0";
+  }
+
+  if (kind === "int_bool") {
+    // Boolean flag represented as integer 1 or 0 in KV3 (e.g. sync_action_to_startround)
+    const isTrue = val === true || val === 1 || val === 1.0 || val === "1" || val === "true";
+    return isTrue ? "1" : "0";
+  }
+
   if (kind === "bool") {
     return Boolean(val) ? "true" : "false";
   }
@@ -292,12 +304,18 @@ export function parseKv3SoundEvent(text) {
     } else if (rawVal === "false") {
       parsedVal = false;
     } else if (!isNaN(Number(rawVal)) && rawVal !== "") {
-      parsedVal = Number(rawVal);
+      const num = Number(rawVal);
+      const spec = SPECS[key];
+      if (spec?.kind === "float_bool" || spec?.kind === "int_bool") {
+        parsedVal = num > 0;
+      } else {
+        parsedVal = num;
+      }
     } else {
       parsedVal = rawVal;
     }
 
-    if (SPECS[key]) {
+    if (SPECS[key] || key === "base") {
       properties[key] = parsedVal;
     }
   }

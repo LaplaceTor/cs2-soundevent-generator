@@ -74,23 +74,31 @@
       <span class="text-[11px] font-mono px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 text-gray-500 rounded whitespace-nowrap">KV3 SPEC</span>
     </div>
 
-    <!-- Zone 2: Action Controls (Presets, Share, Reset - Flows in middle on wide, Row 2 on narrow; strictly NO internal wrapping) -->
-    <div class="header-col-actions flex items-center flex-nowrap gap-1.5 sm:gap-2 lg:gap-3 text-xs justify-start lg:justify-end whitespace-nowrap">
+    <!-- Zone 2: Action Controls (Presets, Share, Reset - Flows in middle on wide, Row 2 on narrow) -->
+    <div class="header-col-actions flex items-center flex-wrap gap-1.5 sm:gap-2 lg:gap-3 text-xs justify-start lg:justify-end">
       <!-- Preset Dropdown -->
-      <div class="flex items-center gap-1.5 text-gray-500 flex-shrink-0 whitespace-nowrap">
-        <span class="hidden sm:inline" data-i18n="presetLabel">预设：</span>
-        <select id="presetSelect" class="bg-transparent text-gray-900 dark:text-gray-100 font-medium py-1 px-2 border border-gray-200 dark:border-gray-800 rounded outline-none cursor-pointer hover:border-black dark:hover:border-white transition-colors whitespace-nowrap">
+      <div class="flex items-center gap-1.5 text-gray-500 flex-shrink-0 min-w-0">
+        <span class="hidden sm:inline whitespace-nowrap" data-i18n="presetLabel">预设：</span>
+        <select id="presetSelect" class="bg-transparent text-gray-900 dark:text-gray-100 font-medium py-1 px-2 border border-gray-200 dark:border-gray-800 rounded outline-none cursor-pointer hover:border-black dark:hover:border-white transition-colors max-w-[200px] sm:max-w-xs md:max-w-sm truncate">
         </select>
       </div>
 
-      <!-- Share URL -->
-      <button id="shareBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Share URL">
-        <span class="hidden sm:inline">🔗 </span><span data-i18n="shareBtn">分享</span>
+      <!-- Share URL (Icon + Text on wide, Icon-only when narrow) -->
+      <button id="shareBtn" class="inline-flex items-center gap-1.5 py-1 px-2 sm:px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors flex-shrink-0 cursor-pointer" title="Share URL">
+        <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="shareBtn">分享</span>
       </button>
 
-      <!-- Reset -->
-      <button id="resetBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Reset">
-        <span data-i18n="resetBtn">重置</span>
+      <!-- Reset (Icon + Text on wide, Icon-only when narrow) -->
+      <button id="resetBtn" class="inline-flex items-center gap-1.5 py-1 px-2 sm:px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium transition-colors flex-shrink-0 cursor-pointer" title="Reset">
+        <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span class="hidden sm:inline" data-i18n="resetBtn">重置</span>
       </button>
     </div>
 
@@ -212,8 +220,8 @@
           </div>
         </div>
 
-        <!-- Zone 2: Editor Options & Actions (Middle on wide, Row 2 on narrow; strictly NO internal wrapping) -->
-        <div class="editor-col-actions flex items-center flex-nowrap gap-2.5 sm:gap-3 py-0.5 justify-start sm:justify-end whitespace-nowrap">
+        <!-- Zone 2: Editor Options & Actions (Middle on wide, Row 2 on narrow) -->
+        <div class="editor-col-actions flex items-center flex-wrap gap-2 sm:gap-2.5 py-0.5 justify-start sm:justify-end">
           <!-- Comments Toggle -->
           <label class="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-black dark:hover:text-white cursor-pointer select-none whitespace-nowrap flex-shrink-0 transition-colors">
             <input type="checkbox" id="includeCommentsCheck" class="custom-checkbox">
@@ -223,12 +231,15 @@
           <!-- Divider between Option Group and Action Group -->
           <span class="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0"></span>
 
-          <!-- Editor Actions (Format, Copy) -->
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <button id="formatBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0" title="Format KV3">
+          <!-- Editor Actions (How to Use, Format, Copy) -->
+          <div class="flex items-center flex-wrap gap-1.5 flex-shrink-0">
+            <button id="howToUseBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer" title="How to use sound entities in Hammer">
+              💡 <span data-i18n="howToUseBtn">如何使用</span>
+            </button>
+            <button id="formatBtn" class="py-1 px-2.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer" title="Format KV3">
               ⚡ <span data-i18n="formatBtn">格式化</span>
             </button>
-            <button id="copyCodeBtn" class="py-1 px-3 bg-black text-white dark:bg-white dark:text-black rounded text-[11px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0">
+            <button id="copyCodeBtn" class="py-1 px-3 bg-black text-white dark:bg-white dark:text-black rounded text-[11px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0 cursor-pointer">
               📋 <span data-i18n="copyCodeBtn">复制</span>
             </button>
           </div>
@@ -283,6 +294,37 @@
     </section>
 
   </main>
+
+  <!-- How To Use Hammer Sound Entities Modal -->
+  <div id="howToUseModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div class="relative w-full max-w-2xl max-h-[88vh] bg-white dark:bg-[#0E131F] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/50 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-base">💡</span>
+          <h3 id="howToUseModalTitle" class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
+            CS2 地图声音实体与发声机制指南
+          </h3>
+        </div>
+        <button id="closeHowToUseModalBtn" class="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-semibold cursor-pointer" aria-label="Close">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body (Independently Scrollable) -->
+      <div id="howToUseModalBody" class="p-5 overflow-y-auto space-y-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans">
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end bg-gray-50/50 dark:bg-gray-900/30 flex-shrink-0">
+        <button id="confirmHowToUseModalBtn" class="py-1.5 px-4 bg-black text-white dark:bg-white dark:text-black rounded text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer">
+          关闭 (Close)
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Minimalist Toast Notification -->
   <div id="toast" class="toast"></div>

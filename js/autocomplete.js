@@ -3,7 +3,7 @@
  * Provides context-aware completions for properties, types, mixgroups, and presets.
  */
 
-import { SPECS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, CURVE_PRESETS } from "./schema.js";
+import { SPECS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, CURVE_PRESETS } from "./schema.js";
 import { I18N } from "./i18n.js";
 
 export class Kv3Autocomplete {
@@ -241,18 +241,6 @@ export class Kv3Autocomplete {
           });
       }
 
-      if (key === "base") {
-        return COMMON_BASE_EVENTS
-          .filter(b => b.toLowerCase().includes(q))
-          .map(b => ({
-            type: "val",
-            kind: "base",
-            label: `"${b}"`,
-            desc: "CS2 Common Base Event",
-            insertText: `"${b}"`
-          }));
-      }
-
       const spec = SPECS[key];
       if (spec?.kind === "bool") {
         return [
@@ -265,6 +253,20 @@ export class Kv3Autocomplete {
         return [
           { type: "val", kind: "string_bool", label: '"true"', desc: "String Boolean", insertText: '"true"' },
           { type: "val", kind: "string_bool", label: '"false"', desc: "String Boolean", insertText: '"false"' }
+        ].filter(b => b.label.includes(q));
+      }
+
+      if (spec?.kind === "float_bool") {
+        return [
+          { type: "val", kind: "bool", label: "1.0", desc: "Float Boolean True (1.0)", insertText: "1.0" },
+          { type: "val", kind: "bool", label: "0.0", desc: "Float Boolean False (0.0)", insertText: "0.0" }
+        ].filter(b => b.label.includes(q));
+      }
+
+      if (spec?.kind === "int_bool") {
+        return [
+          { type: "val", kind: "bool", label: "1", desc: "Integer Boolean True (1)", insertText: "1" },
+          { type: "val", kind: "bool", label: "0", desc: "Integer Boolean False (0)", insertText: "0" }
         ].filter(b => b.label.includes(q));
       }
 

@@ -3,11 +3,11 @@
  * Pure Vanilla ES Modules, Responsive Split-Pane Layout.
  */
 
-import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, TYPE_DESCRIPTIONS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP, CHILD_TO_PARENT_MAP } from "./schema.js";
+import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, TYPE_DESCRIPTIONS, typeNeedsValue, MIN_MAX_MAP, CHILD_TO_PARENT_MAP } from "./schema.js";
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
-import { drawCurveCanvas, attachInteractiveCurve, CURVE_PRESETS, generateCurveFromEndpoints } from "./curve.js";
+import { drawCurveCanvas, attachInteractiveCurve, CURVE_PRESETS, generateCurveFromEndpoints, getCurveAxisInfo } from "./curve.js";
 import { Kv3Autocomplete } from "./autocomplete.js";
 
 // Global App State
@@ -58,6 +58,14 @@ const includeCommentsCheck = document.getElementById("includeCommentsCheck");
 const copyCodeBtn = document.getElementById("copyCodeBtn");
 const toast = document.getElementById("toast");
 
+// How To Use Hammer Sound Entities Modal Elements
+const howToUseBtn = document.getElementById("howToUseBtn");
+const howToUseModal = document.getElementById("howToUseModal");
+const closeHowToUseModalBtn = document.getElementById("closeHowToUseModalBtn");
+const confirmHowToUseModalBtn = document.getElementById("confirmHowToUseModalBtn");
+const howToUseModalTitle = document.getElementById("howToUseModalTitle");
+const howToUseModalBody = document.getElementById("howToUseModalBody");
+
 let autocomplete = null;
 let currentErrorLine = null;
 let codeDebounceTimer = null;
@@ -69,6 +77,261 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+/**
+ * Render How To Use Sound Entities Guide Modal
+ */
+function renderHowToUseModal() {
+  if (!howToUseModalBody) return;
+  const isZh = state.lang === "zh";
+
+  if (howToUseModalTitle) {
+    howToUseModalTitle.textContent = isZh
+      ? "CS2 地图声音实体与发声机制指南"
+      : "CS2 Hammer Sound Entities & Playback Guide";
+  }
+
+  if (confirmHowToUseModalBtn) {
+    confirmHowToUseModalBtn.textContent = isZh ? "关闭 (Close)" : "Close";
+  }
+
+  if (isZh) {
+    howToUseModalBody.innerHTML = `
+      <!-- Section 1: Core Concept -->
+      <div class="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+        <h4 class="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
+          <span>🎯</span> 核心概念：SoundEvent 与地图实体的关系
+        </h4>
+        <p class="text-gray-700 dark:text-gray-300">
+          <strong>SoundEvent (<code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">.vsndevts</code>)</strong> 是声音的“配置模板与算法内核”，定义音量、3D距离衰减曲线、空间混响与几何遮挡。<strong>绝大多数情况下无需在配置中写死 <code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">position</code> 坐标</strong>。
+        </p>
+        <p class="text-gray-700 dark:text-gray-300">
+          <strong>地图实体 (Hammer Entities)</strong> 是关卡中的“3D发声原点与播放控制器”，负责提供世界空间坐标、响应触发逻辑 (I/O) 以及追踪模型运动。
+        </p>
+      </div>
+
+      <!-- Section 2: Entity Types Grid -->
+      <div class="space-y-2.5">
+        <h4 class="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5">
+          <span>🔊</span> CS2 官方核心发声实体选型指南（在 Hammer 中使用）
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          
+          <!-- snd_event_point -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_point</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded">标准单点</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：从该实体自身的单一点坐标向四周辐射。<br>
+              <strong>场景</strong>：按钮交互音、发电机、警报喇叭、开关音效。<br>
+              <strong>常用 I/O</strong>：<code class="font-mono text-[10px]">StartSound</code>（播放）、<code class="font-mono text-[10px]">StopSound</code>（停止）。
+            </p>
+          </div>
+
+          <!-- snd_event_sphere -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_sphere</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 rounded">球体音源</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：设置半径 <code class="font-mono text-[10px]">radius</code>，发声点<strong>实时吸附在球体表面距离玩家最近的点</strong>。<br>
+              <strong>场景</strong>：大型球形火球、穹顶核心、大型旋转球体机械。
+            </p>
+          </div>
+
+          <!-- snd_event_orientedbox -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_orientedbox</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded">长方体包围盒</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：设置长宽高包围盒，发声点<strong>实时投影在盒体表面距离玩家最近的接触面</strong>。<br>
+              <strong>场景</strong>：长条形河流、大型瀑布水幕、地下风道管道、开阔水面。
+            </p>
+          </div>
+
+          <!-- snd_event_cone -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_cone</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 rounded">圆锥定向音源</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：带有朝向角与夹角，正面清脆洪亮，背面被阻尼与低通滤波遮蔽。<br>
+              <strong>场景</strong>：扩音喊话喇叭、防空号角、聚光型扩音设备。
+            </p>
+          </div>
+
+          <!-- snd_event_path_corner -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_path_corner</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 rounded">路径网络音源</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：沿着地图中的路径拐角网络连续平滑移动。<br>
+              <strong>场景</strong>：高空呼啸掠过的战机、地下铁轨呼啸的地铁列车。
+            </p>
+          </div>
+
+          <!-- snd_opvar_set_* -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_opvar_set_*</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 rounded">参数控制器</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>机制</strong>：<strong>本身不发声</strong>。根据玩家距离动态修改 SoundEvent 内部的变量。<br>
+              <strong>场景</strong>：玩家靠近特定区域时调节低通截频、环境混音过渡。
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 3: Step-by-Step Implementation -->
+      <div class="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+        <h4 class="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5">
+          <span>🚀</span> 四步落地实操流程
+        </h4>
+        <ol class="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300 text-[11px]">
+          <li><strong>配置与复制</strong>：在当前网页生成器调整属性或选用预设，点击右侧工具栏的“📋 复制”按钮。</li>
+          <li><strong>保存文件</strong>：在你的 CS2 模组目录下保存为：<code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">game/csgo_addons/&lt;你的Addon&gt;/soundevents/soundevents_addon.vsndevts</code>。</li>
+          <li><strong>在 Hammer 中放置实体</strong>：在地图中放置声音实体（如 <code class="font-mono text-[10px]">snd_event_point</code>），在其实体属性 <code class="font-mono text-[10px]">Sound Event Name</code>（或 <code class="font-mono text-[10px]">soundName</code>）填入你的事件名（例如 <code class="font-mono text-[10px]">Weapon_Custom.Single</code>）。</li>
+          <li><strong>逻辑联动 (I/O)</strong>：如需按键交互，在触发实体（如 <code class="font-mono text-[10px]">func_button</code>）的 Outputs 添加：<code class="font-mono text-[10px]">OnPressed -&gt; 你的声音实体 -&gt; StartSound</code>。编译地图即可体验！</li>
+        </ol>
+      </div>
+    `;
+  } else {
+    howToUseModalBody.innerHTML = `
+      <!-- Section 1: Core Concept -->
+      <div class="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+        <h4 class="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
+          <span>🎯</span> Core Concept: SoundEvents vs. Map Entities
+        </h4>
+        <p class="text-gray-700 dark:text-gray-300">
+          <strong>SoundEvent (<code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">.vsndevts</code>)</strong> is the blueprint and DSP processing engine defining volume, 3D falloff curves, reverb, and occlusion. In almost all cases, <strong>you do NOT hardcode <code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">position</code> in the KV3 definition</strong>.
+        </p>
+        <p class="text-gray-700 dark:text-gray-300">
+          <strong>Map Entities (Hammer Entities)</strong> serve as the 3D origin and playback controllers in the level, responsible for providing coordinates, receiving I/O triggers, and tracking movement.
+        </p>
+      </div>
+
+      <!-- Section 2: Entity Types Grid -->
+      <div class="space-y-2.5">
+        <h4 class="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5">
+          <span>🔊</span> Official CS2 Sound Entity Selection Guide
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          
+          <!-- snd_event_point -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_point</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded">Standard Point</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: Emits from a 0D single point in world space.<br>
+              <strong>Use Cases</strong>: Button clicks, generators, alarms, door switches.<br>
+              <strong>Common I/O</strong>: <code class="font-mono text-[10px]">StartSound</code>, <code class="font-mono text-[10px]">StopSound</code>.
+            </p>
+          </div>
+
+          <!-- snd_event_sphere -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_sphere</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 rounded">Sphere Surface</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: Specified by <code class="font-mono text-[10px]">radius</code>. Sound dynamically originates from <strong>the closest point on the sphere surface to the player</strong>.<br>
+              <strong>Use Cases</strong>: Large bonfires, spherical reactors, dome machinery.
+            </p>
+          </div>
+
+          <!-- snd_event_orientedbox -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_orientedbox</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded">Box / OBB</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: Defined by bounding box bounds. Sound dynamically originates from <strong>the closest point on the box surface to the player</strong>.<br>
+              <strong>Use Cases</strong>: Long rivers, waterfalls, ventilation conduits, open water.
+            </p>
+          </div>
+
+          <!-- snd_event_cone -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_cone</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 rounded">Directional Cone</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: Has forward direction and field-of-view angle. Loud and crisp on front, heavily occluded and low-passed behind.<br>
+              <strong>Use Cases</strong>: Megaphones, air raid sirens, directional public address systems.
+            </p>
+          </div>
+
+          <!-- snd_event_path_corner -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_event_path_corner</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 rounded">Path Network</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: Smoothly travels along segments of a <code class="font-mono text-[10px]">path_corner</code> network.<br>
+              <strong>Use Cases</strong>: Flyby aircraft, overhead drones, subway trains.
+            </p>
+          </div>
+
+          <!-- snd_opvar_set_* -->
+          <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">snd_opvar_set_*</span>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 rounded">OpVar Modifier</span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-[11px]">
+              <strong>Mechanism</strong>: <strong>Does NOT play audio directly</strong>. Dynamically modifies SoundEvent OpVar variables based on player distance.<br>
+              <strong>Use Cases</strong>: Dynamic low-pass filters or ambient crossfade when entering specific zones.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 3: Step-by-Step Implementation -->
+      <div class="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+        <h4 class="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5">
+          <span>🚀</span> 4-Step Practical Implementation
+        </h4>
+        <ol class="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300 text-[11px]">
+          <li><strong>Configure & Copy</strong>: Fine-tune properties or select a preset, then click "📋 Copy" in the right editor toolbar.</li>
+          <li><strong>Save File</strong>: Save in your addon directory: <code class="px-1 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono">game/csgo_addons/&lt;addon&gt;/soundevents/soundevents_addon.vsndevts</code>.</li>
+          <li><strong>Place in Hammer</strong>: Place a sound entity (e.g. <code class="font-mono text-[10px]">snd_event_point</code>), and set its <code class="font-mono text-[10px]">Sound Event Name</code> (or <code class="font-mono text-[10px]">soundName</code>) to your event name (e.g. <code class="font-mono text-[10px]">Weapon_Custom.Single</code>).</li>
+          <li><strong>Link I/O</strong>: For interactions, add an output to a trigger entity (e.g. <code class="font-mono text-[10px]">func_button</code>: <code class="font-mono text-[10px]">OnPressed -&gt; YourSoundEntity -&gt; StartSound</code>). Compile map and enjoy!</li>
+        </ol>
+      </div>
+    `;
+  }
+}
+
+function openHowToUseModal() {
+  if (!howToUseModal) return;
+  renderHowToUseModal();
+  howToUseModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeHowToUseModal() {
+  if (!howToUseModal) return;
+  howToUseModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
 }
 
 /**
@@ -85,6 +348,8 @@ function updateI18nUI() {
   searchInput.placeholder = t.searchPlaceholder;
   eventNameInput.placeholder = t.eventNamePlaceholder;
   langToggleBtn.textContent = state.lang === "zh" ? "EN" : "中文";
+  if (shareBtn) shareBtn.title = state.lang === "zh" ? "分享配置链接" : "Share Configuration Link";
+  if (resetBtn) resetBtn.title = state.lang === "zh" ? "重置为默认 3D 空间预设" : "Reset to Default 3D Preset";
 
   // Re-populate preset options
   const curPreset = presetSelect.value;
@@ -97,6 +362,11 @@ function updateI18nUI() {
     presetSelect.appendChild(opt);
   }
   presetSelect.value = curPreset || "csgo_mega_basic";
+
+  // Re-render modal if open
+  if (howToUseModal && !howToUseModal.classList.contains("hidden")) {
+    renderHowToUseModal();
+  }
 }
 
 /**
@@ -274,9 +544,9 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       const btns = pRow.querySelectorAll("button");
       btns.forEach(btn => {
         const txt = btn.textContent.trim().toLowerCase();
-        if (txt === "true") {
+        if (txt.includes("true")) {
           btn.className = `px-2 py-0.5 rounded-sm transition-colors ${isTrue ? "bg-black text-white dark:bg-white dark:text-black font-semibold" : "text-gray-500 hover:text-black dark:hover:text-white"}`;
-        } else if (txt === "false") {
+        } else if (txt.includes("false")) {
           btn.className = `px-2 py-0.5 rounded-sm transition-colors ${!isTrue ? "bg-black text-white dark:bg-white dark:text-black font-semibold" : "text-gray-500 hover:text-black dark:hover:text-white"}`;
         }
       });
@@ -538,11 +808,22 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 2. Bool / string_bool
-  if (kind === "bool" || kind === "string_bool") {
-    const isTrue = val === true || val === "true";
+  // 2. Bool / string_bool / float_bool / int_bool
+  if (kind === "bool" || kind === "string_bool" || kind === "float_bool" || kind === "int_bool") {
+    let isTrue = false;
+    if (kind === "float_bool") {
+      isTrue = val === 1 || val === 1.0 || val === "1.0" || val === true || val === "true";
+    } else if (kind === "int_bool") {
+      isTrue = val === 1 || val === "1" || val === true || val === "true";
+    } else {
+      isTrue = val === true || val === "true";
+    }
+
     const wrap = document.createElement("div");
-    wrap.className = "inline-flex p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-mono";
+    wrap.className = "inline-flex items-center gap-2";
+
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "inline-flex p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-mono";
 
     const trueBtn = document.createElement("button");
     trueBtn.type = "button";
@@ -557,17 +838,26 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     trueBtn.addEventListener("click", () => {
       trueBtn.className = "px-2 py-0.5 rounded-sm bg-black text-white dark:bg-white dark:text-black font-semibold transition-colors";
       falseBtn.className = "px-2 py-0.5 rounded-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors";
-      onUserEdit(kind === "string_bool" ? "true" : true);
+      let emitted = true;
+      if (kind === "string_bool") emitted = "true";
+      else if (kind === "float_bool") emitted = 1.0;
+      else if (kind === "int_bool") emitted = 1;
+      onUserEdit(emitted);
     });
 
     falseBtn.addEventListener("click", () => {
       falseBtn.className = "px-2 py-0.5 rounded-sm bg-black text-white dark:bg-white dark:text-black font-semibold transition-colors";
       trueBtn.className = "px-2 py-0.5 rounded-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors";
-      onUserEdit(kind === "string_bool" ? "false" : false);
+      let emitted = false;
+      if (kind === "string_bool") emitted = "false";
+      else if (kind === "float_bool") emitted = 0.0;
+      else if (kind === "int_bool") emitted = 0;
+      onUserEdit(emitted);
     });
 
-    wrap.appendChild(trueBtn);
-    wrap.appendChild(falseBtn);
+    btnGroup.appendChild(trueBtn);
+    btnGroup.appendChild(falseBtn);
+    wrap.appendChild(btnGroup);
     container.appendChild(wrap);
     return;
   }
@@ -657,36 +947,11 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 4. Base inheritance quick select
+  // 4. Base (No dropdown or input box - author directly in right editor)
   if (kind === "base" || key === "base") {
-    const wrap = document.createElement("div");
-    wrap.className = "space-y-1.5";
-
-    const quickSelect = document.createElement("select");
-    quickSelect.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer";
-    quickSelect.innerHTML = `<option value="">${t.baseSelectPrompt}</option>` +
-      COMMON_BASE_EVENTS.map(b => `<option value="${b.value}">${b.value} (${state.lang === "zh" ? b.desc_zh : b.desc_en})</option>`).join("");
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
-    input.value = val || "";
-    input.placeholder = "amb.base 或 parent.soundevent";
-
-    quickSelect.addEventListener("change", (e) => {
-      if (e.target.value) {
-        input.value = e.target.value;
-        onUserEdit(e.target.value);
-      }
-    });
-
-    input.addEventListener("input", (e) => {
-      onUserEdit(e.target.value);
-    });
-
-    wrap.appendChild(quickSelect);
-    wrap.appendChild(input);
-    container.appendChild(wrap);
+    const hint = document.createElement("div");
+    hint.className = "text-[11px] text-gray-500 dark:text-gray-400 font-mono flex items-center gap-1.5 py-0.5";
+    container.appendChild(hint);
     return;
   }
 
@@ -800,10 +1065,16 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     canvas.className = "w-full h-full block touch-none select-none";
     canvasWrap.appendChild(canvas);
 
-    // Tip
-    const tipEl = document.createElement("div");
-    tipEl.className = "text-[10px] text-gray-400 dark:text-gray-500 flex justify-between";
-    tipEl.innerHTML = `<span>拖拽控制点微调 | 双击画布空白添加控制点</span><span>预设自适应计算所有控制点</span>`;
+    // Axis indicator: clean compact single-line "X 空间距离 | Y 音量衰减倍率" centered under canvas
+    const axisInfo = getCurveAxisInfo(key, state.lang);
+    const axisInfoEl = document.createElement("div");
+    axisInfoEl.className = "w-full text-[11px] font-mono text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2 py-0.5 select-none truncate";
+    axisInfoEl.title = `${axisInfo.descX} | ${axisInfo.descY}`;
+    axisInfoEl.innerHTML = `
+      <span><strong class="font-bold text-gray-900 dark:text-gray-100">X</strong> ${axisInfo.x}</span>
+      <span class="text-gray-300 dark:text-gray-700">|</span>
+      <span><strong class="font-bold text-gray-900 dark:text-gray-100">Y</strong> ${axisInfo.y}</span>
+    `;
 
     // Table Container
     const tableWrap = document.createElement("div");
@@ -822,22 +1093,27 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     let interactiveCtrl = null;
 
     function renderTableRows() {
+      const firstX = curvePoints[0]?.[0] || 0;
+      const lastX = curvePoints[curvePoints.length - 1]?.[0] || 1;
+      const currentSpanX = Math.max(0.1, lastX - firstX);
+      const xStep = currentSpanX <= 1.5 ? "0.01" : (currentSpanX <= 10 ? "0.05" : (currentSpanX <= 100 ? "0.1" : "1"));
+
       table.innerHTML = `
         <thead>
           <tr>
-            <th style="width: 18%">X</th>
-            <th style="width: 16%">Y</th>
-            <th style="width: 17%">左斜</th>
-            <th style="width: 17%">右斜</th>
-            <th style="width: 13%">左模</th>
-            <th style="width: 13%">右模</th>
+            <th style="width: 18%" title="${axisInfo.descX}">X</th>
+            <th style="width: 16%" title="${axisInfo.descY}">Y</th>
+            <th style="width: 17%" title="${state.lang === 'zh' ? '左切线斜率 (Left Tangent Slope)' : 'Left Tangent Slope'}">${state.lang === 'zh' ? '左斜' : 'L-Slope'}</th>
+            <th style="width: 17%" title="${state.lang === 'zh' ? '右切线斜率 (Right Tangent Slope)' : 'Right Tangent Slope'}">${state.lang === 'zh' ? '右斜' : 'R-Slope'}</th>
+            <th style="width: 13%" title="${state.lang === 'zh' ? '左端插值模式: 0=线性, 1=快速, 2=慢速, 3=样条, 4=阶梯' : 'Left Mode: 0=Linear, 1=Fast, 2=Slow, 3=Spline, 4=Step'}">${state.lang === 'zh' ? '左模' : 'L-Mode'}</th>
+            <th style="width: 13%" title="${state.lang === 'zh' ? '右端插值模式: 0=线性, 1=快速, 2=慢速, 3=样条, 4=阶梯' : 'Right Mode: 0=Linear, 1=Fast, 2=Slow, 3=Spline, 4=Step'}">${state.lang === 'zh' ? '右模' : 'R-Mode'}</th>
             <th style="width: 6%"></th>
           </tr>
         </thead>
         <tbody>
           ${curvePoints.map((pt, pIdx) => `
             <tr>
-              <td><input class="curve-cell-input" type="number" step="1" value="${pt[0]}" data-pidx="${pIdx}" data-c="0"></td>
+              <td><input class="curve-cell-input" type="number" step="${xStep}" value="${pt[0]}" data-pidx="${pIdx}" data-c="0"></td>
               <td><input class="curve-cell-input" type="number" step="0.05" value="${pt[1]}" data-pidx="${pIdx}" data-c="1"></td>
               <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[2]}" data-pidx="${pIdx}" data-c="2"></td>
               <td><input class="curve-cell-input" type="number" step="0.001" value="${pt[3]}" data-pidx="${pIdx}" data-c="3"></td>
@@ -920,7 +1196,16 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     // Add Point Click
     addPtBtn.addEventListener("click", () => {
       const lastPt = curvePoints[curvePoints.length - 1] || [0, 0, 0, 0, 2, 3];
-      const newPts = [...curvePoints, [Math.round(lastPt[0] + 500), Number(lastPt[1].toFixed(2)), 0, 0, 2, 3]];
+      const firstPt = curvePoints[0] || [0, 0, 0, 0, 2, 3];
+      const currentSpan = Math.max(0.1, lastPt[0] - firstPt[0]);
+      let addStep = 500;
+      if (currentSpan <= 1.5) addStep = 0.2;
+      else if (currentSpan <= 10) addStep = 1.0;
+      else if (currentSpan <= 50) addStep = 5.0;
+      else if (currentSpan <= 100) addStep = 10.0;
+
+      const newX = currentSpan <= 1.5 ? Number((lastPt[0] + addStep).toFixed(2)) : Math.round(lastPt[0] + addStep);
+      const newPts = [...curvePoints, [newX, Number(lastPt[1].toFixed(2)), 0, 0, 2, 3]];
       newPts.sort((a, b) => a[0] - b[0]);
       curvePoints = newPts;
       renderTableRows();
@@ -932,7 +1217,7 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
 
     wrap.appendChild(toolbar);
     wrap.appendChild(canvasWrap);
-    wrap.appendChild(tipEl);
+    wrap.appendChild(axisInfoEl);
     wrap.appendChild(tableWrap);
     wrap.appendChild(addPtBtn);
     container.appendChild(wrap);
@@ -1369,6 +1654,16 @@ function initEventListeners() {
     state.notify();
   });
 
+  // How To Use Modal
+  if (howToUseBtn && howToUseModal) {
+    howToUseBtn.addEventListener("click", openHowToUseModal);
+    if (closeHowToUseModalBtn) closeHowToUseModalBtn.addEventListener("click", closeHowToUseModal);
+    if (confirmHowToUseModalBtn) confirmHowToUseModalBtn.addEventListener("click", closeHowToUseModal);
+    howToUseModal.addEventListener("click", (e) => {
+      if (e.target === howToUseModal) closeHowToUseModal();
+    });
+  }
+
   // Copy
   copyCodeBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(codeEditor.value).then(() => {
@@ -1422,8 +1717,14 @@ function initEventListeners() {
 
     // Close on Escape key
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && document.body.classList.contains("drawer-open")) {
-        closeDrawer();
+      if (e.key === "Escape") {
+        if (howToUseModal && !howToUseModal.classList.contains("hidden")) {
+          closeHowToUseModal();
+          return;
+        }
+        if (document.body.classList.contains("drawer-open")) {
+          closeDrawer();
+        }
       }
     });
   }
