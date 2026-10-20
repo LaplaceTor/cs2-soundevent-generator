@@ -2,7 +2,7 @@
  * Application State, LocalStorage Persistence & Shareable URL Hash Management
  */
 
-import { DEFAULTS, SPECS, PRESETS } from "./schema.js";
+import { DEFAULTS, SPECS, PRESETS, MIN_MAX_MAP } from "./schema.js";
 import { parseKv3SoundEvent } from "./kv3.js";
 
 const STORAGE_KEY = "h5t_cs2_soundevent_gen_state_v1";
@@ -64,12 +64,74 @@ export class SoundEventState {
     } else {
       this.enabledProperties.delete(key);
     }
+
+    // Min-Max pair checkbox synchronization
+    const pair = MIN_MAX_MAP.get(key);
+    if (pair) {
+      if (enabled) {
+        this.enabledProperties.add(pair.partner);
+        const pCur = this.propertyValues[pair.partner];
+        if (!(pair.partner in this.propertyValues) || pCur === undefined || (Array.isArray(pCur) && pCur.length === 0)) {
+          const pDef = DEFAULTS[pair.partner] !== undefined ? DEFAULTS[pair.partner] : 0;
+          this.propertyValues[pair.partner] = JSON.parse(JSON.stringify(pDef));
+        }
+        // Enforce min <= max on enablement
+        const minKey = pair.role === "min" ? key : pair.partner;
+        const maxKey = pair.role === "max" ? key : pair.partner;
+        const minVal = Number(this.propertyValues[minKey]);
+        const maxVal = Number(this.propertyValues[maxKey]);
+        if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
+          this.propertyValues[maxKey] = minVal;
+        }
+      } else {
+        this.enabledProperties.delete(pair.partner);
+      }
+    }
+
     this.notify();
   }
 
   setPropertyValue(key, val) {
     this.propertyValues[key] = val;
+
+    // Enforce min <= max constraint if key is part of a min/max pair
+    const pair = MIN_MAX_MAP.get(key);
+    if (pair) {
+      const numVal = Number(val);
+      if (!isNaN(numVal)) {
+        const partnerVal = Number(this.propertyValues[pair.partner]);
+        if (!isNaN(partnerVal)) {
+          if (pair.role === "min" && numVal > partnerVal) {
+            this.propertyValues[pair.partner] = numVal;
+          } else if (pair.role === "max" && numVal < partnerVal) {
+            this.propertyValues[pair.partner] = numVal;
+          }
+        }
+      }
+    }
+
     this.notify();
+  }
+
+  _enforceMinMaxPairConsistency() {
+    for (const key of Array.from(this.enabledProperties)) {
+      const pair = MIN_MAX_MAP.get(key);
+      if (pair) {
+        this.enabledProperties.add(pair.partner);
+        const pCur = this.propertyValues[pair.partner];
+        if (!(pair.partner in this.propertyValues) || pCur === undefined || (Array.isArray(pCur) && pCur.length === 0)) {
+          const pDef = DEFAULTS[pair.partner] !== undefined ? DEFAULTS[pair.partner] : 0;
+          this.propertyValues[pair.partner] = JSON.parse(JSON.stringify(pDef));
+        }
+        const minKey = pair.role === "min" ? key : pair.partner;
+        const maxKey = pair.role === "max" ? key : pair.partner;
+        const minVal = Number(this.propertyValues[minKey]);
+        const maxVal = Number(this.propertyValues[maxKey]);
+        if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
+          this.propertyValues[maxKey] = minVal;
+        }
+      }
+    }
   }
 
   getActiveProperties() {
@@ -94,6 +156,7 @@ export class SoundEventState {
       this.enabledProperties.add(k);
       this.propertyValues[k] = v;
     }
+    this._enforceMinMaxPairConsistency();
     this.notify();
     return true;
   }
@@ -136,6 +199,7 @@ export class SoundEventState {
           this.propertyValues[k] = v;
         }
       }
+      this._enforceMinMaxPairConsistency();
       this.notify();
       return true;
     } catch (e) {
@@ -185,6 +249,7 @@ export class SoundEventState {
           this.propertyValues["vsnd_files_track_01"] = "sounds/custom/new_sound.vsnd";
         }
       }
+      this._enforceMinMaxPairConsistency();
       if (typeof data.includeComments === "boolean") this.includeComments = data.includeComments;
       if (data.lang) this.lang = data.lang;
       if (data.theme) this.theme = data.theme;

@@ -3,7 +3,7 @@
  * Pure Vanilla ES Modules, Responsive Split-Pane Layout.
  */
 
-import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue } from "./schema.js";
+import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP } from "./schema.js";
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
@@ -245,8 +245,45 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
   row.className = `prop-row ${isEnabled ? "enabled" : ""}`;
   row.setAttribute("data-prop-key", key);
 
+  const pairInfo = MIN_MAX_MAP.get(key);
   const label = t.labels[key] || key;
   const desc = t.tooltips[key] || "";
+
+  // Helper to synchronize partner row DOM state for min/max pairs
+  function syncPartnerRow(partnerKey, isPartnerEnabled) {
+    const pRow = document.querySelector(`[data-prop-key="${partnerKey}"]`);
+    if (pRow) {
+      if (isPartnerEnabled) {
+        pRow.classList.add("enabled");
+      } else {
+        pRow.classList.remove("enabled");
+      }
+      const pCb = pRow.querySelector(".custom-checkbox");
+      if (pCb) pCb.checked = isPartnerEnabled;
+      const pGroup = SPECS[partnerKey]?.group;
+      if (pGroup) updateGroupBadge(pGroup);
+    }
+  }
+
+  function syncPartnerInputs(partnerKey) {
+    const partnerVal = state.propertyValues[partnerKey];
+    const pRow = document.querySelector(`[data-prop-key="${partnerKey}"]`);
+    if (pRow && partnerVal !== undefined) {
+      const pSlider = pRow.querySelector("input[type='range']");
+      const pNum = pRow.querySelector("input[type='number']");
+      const pValNum = Number(partnerVal);
+      if (!isNaN(pValNum)) {
+        if (pSlider) {
+          if (pValNum < parseFloat(pSlider.min)) pSlider.min = pValNum;
+          if (pValNum > parseFloat(pSlider.max)) pSlider.max = pValNum;
+          pSlider.value = pValNum;
+        }
+        if (pNum) {
+          pNum.value = pValNum;
+        }
+      }
+    }
+  }
 
   // Top header: Checkbox, Label, Key name
   const top = document.createElement("div");
@@ -260,12 +297,17 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
   checkbox.className = "custom-checkbox mt-0.5";
   checkbox.checked = isEnabled;
 
+  const pairBadge = pairInfo
+    ? `<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help" title="成对关联属性: ${pairInfo.partner}">⇄ ${pairInfo.role.toUpperCase()}</span>`
+    : "";
+
   const labelWrap = document.createElement("div");
   labelWrap.className = "flex-1 min-w-0 leading-tight";
   labelWrap.innerHTML = `
     <div class="flex items-baseline gap-1.5 flex-wrap">
       <span class="text-xs font-medium text-gray-900 dark:text-gray-100">${label}</span>
       <span class="text-[11px] font-mono text-gray-400 select-all">${key}</span>
+      ${pairBadge}
     </div>
   `;
 
@@ -285,9 +327,13 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
   // Ensure property is enabled when user interacts with control
   function ensureEnabled() {
     if (!state.enabledProperties.has(key)) {
-      state.enabledProperties.add(key);
+      state.setPropertyEnabled(key, true);
       checkbox.checked = true;
       row.classList.add("enabled");
+      if (pairInfo) {
+        syncPartnerRow(pairInfo.partner, true);
+        syncPartnerInputs(pairInfo.partner);
+      }
       updateGroupBadge(spec.group);
       if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
       updateOutput();
@@ -299,6 +345,10 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     state.setPropertyEnabled(key, isNowChecked);
     if (isNowChecked) {
       row.classList.add("enabled");
+      if (pairInfo) {
+        syncPartnerRow(pairInfo.partner, true);
+        syncPartnerInputs(pairInfo.partner);
+      }
       if (TOGGLE_DEPENDENTS[key]) {
         TOGGLE_DEPENDENTS[key].forEach(depKey => {
           state.setPropertyEnabled(depKey, true);
@@ -314,6 +364,9 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       }
     } else {
       row.classList.remove("enabled");
+      if (pairInfo) {
+        syncPartnerRow(pairInfo.partner, false);
+      }
     }
     updateGroupBadge(spec.group);
     if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
@@ -330,6 +383,9 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     renderControlWidget(controlWrap, key, spec, val, t, (newVal) => {
       ensureEnabled();
       state.setPropertyValue(key, newVal);
+      if (pairInfo) {
+        syncPartnerInputs(pairInfo.partner);
+      }
       updateOutput();
     });
     row.appendChild(controlWrap);

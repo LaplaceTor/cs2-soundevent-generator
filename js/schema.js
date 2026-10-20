@@ -1823,6 +1823,12 @@ export const PAIRED = [
   ]
 ];
 
+export const MIN_MAX_MAP = new Map();
+PAIRED.forEach(([minKey, maxKey]) => {
+  MIN_MAX_MAP.set(minKey, { role: "min", partner: maxKey });
+  MIN_MAX_MAP.set(maxKey, { role: "max", partner: minKey });
+});
+
 export const DSP_PRESETS = [
   "reverb_2_crawlSpace",
   "reverb_3_smallTunnels",
