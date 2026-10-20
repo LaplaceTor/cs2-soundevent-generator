@@ -2,7 +2,7 @@
  * Application State, LocalStorage Persistence & Shareable URL Hash Management
  */
 
-import { DEFAULTS, SPECS, PRESETS, MIN_MAX_MAP } from "./schema.js";
+import { DEFAULTS, SPECS, PRESETS, MIN_MAX_MAP, TOGGLE_DEPENDENTS, CHILD_TO_PARENT_MAP } from "./schema.js";
 import { parseKv3SoundEvent } from "./kv3.js";
 
 const STORAGE_KEY = "h5t_cs2_soundevent_gen_state_v1";
@@ -61,14 +61,34 @@ export class SoundEventState {
         const defaultVal = DEFAULTS[key] !== undefined ? DEFAULTS[key] : (SPECS[key]?.kind === "bool" ? false : 0);
         this.propertyValues[key] = JSON.parse(JSON.stringify(defaultVal));
       }
-    } else {
-      this.enabledProperties.delete(key);
-    }
 
-    // Min-Max pair checkbox synchronization
-    const pair = MIN_MAX_MAP.get(key);
-    if (pair) {
-      if (enabled) {
+      // If key is a parent toggle, automatically enable all dependent children
+      const children = TOGGLE_DEPENDENTS[key];
+      if (children) {
+        for (const childKey of children) {
+          this.enabledProperties.add(childKey);
+          const cCur = this.propertyValues[childKey];
+          if (!(childKey in this.propertyValues) || cCur === undefined || (Array.isArray(cCur) && cCur.length === 0)) {
+            const cDef = DEFAULTS[childKey] !== undefined ? DEFAULTS[childKey] : (SPECS[childKey]?.kind === "bool" ? false : 0);
+            this.propertyValues[childKey] = JSON.parse(JSON.stringify(cDef));
+          }
+        }
+      }
+
+      // If key is a child property, automatically enable its parent toggle
+      const parentKey = CHILD_TO_PARENT_MAP.get(key);
+      if (parentKey) {
+        this.enabledProperties.add(parentKey);
+        const pCur = this.propertyValues[parentKey];
+        if (!(parentKey in this.propertyValues) || pCur === undefined) {
+          const pDef = DEFAULTS[parentKey] !== undefined ? DEFAULTS[parentKey] : true;
+          this.propertyValues[parentKey] = JSON.parse(JSON.stringify(pDef));
+        }
+      }
+
+      // Min-Max pair checkbox synchronization
+      const pair = MIN_MAX_MAP.get(key);
+      if (pair) {
         this.enabledProperties.add(pair.partner);
         const pCur = this.propertyValues[pair.partner];
         if (!(pair.partner in this.propertyValues) || pCur === undefined || (Array.isArray(pCur) && pCur.length === 0)) {
@@ -83,8 +103,53 @@ export class SoundEventState {
         if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
           this.propertyValues[maxKey] = minVal;
         }
-      } else {
+        // If partner is a child, ensure its parent toggle is enabled
+        const partnerParentKey = CHILD_TO_PARENT_MAP.get(pair.partner);
+        if (partnerParentKey) {
+          this.enabledProperties.add(partnerParentKey);
+          if (!(partnerParentKey in this.propertyValues) || this.propertyValues[partnerParentKey] === undefined) {
+            const ppDef = DEFAULTS[partnerParentKey] !== undefined ? DEFAULTS[partnerParentKey] : true;
+            this.propertyValues[partnerParentKey] = JSON.parse(JSON.stringify(ppDef));
+          }
+        }
+      }
+    } else {
+      this.enabledProperties.delete(key);
+
+      // 1. If key is a parent toggle, REMOVE all attached child properties
+      const children = TOGGLE_DEPENDENTS[key];
+      if (children) {
+        for (const childKey of children) {
+          this.enabledProperties.delete(childKey);
+          const childPair = MIN_MAX_MAP.get(childKey);
+          if (childPair) {
+            this.enabledProperties.delete(childPair.partner);
+          }
+        }
+      }
+
+      // 2. If key is a child property, check if ALL children of that parent are now disabled
+      const parentKey = CHILD_TO_PARENT_MAP.get(key);
+      if (parentKey) {
+        const siblingChildren = TOGGLE_DEPENDENTS[parentKey] || [];
+        const hasOtherEnabledChild = siblingChildren.some(k => k !== key && this.enabledProperties.has(k));
+        if (!hasOtherEnabledChild) {
+          this.enabledProperties.delete(parentKey);
+        }
+      }
+
+      // 3. Min-Max pair partner removal
+      const pair = MIN_MAX_MAP.get(key);
+      if (pair) {
         this.enabledProperties.delete(pair.partner);
+        const partnerParentKey = CHILD_TO_PARENT_MAP.get(pair.partner);
+        if (partnerParentKey) {
+          const siblingChildren = TOGGLE_DEPENDENTS[partnerParentKey] || [];
+          const hasOther = siblingChildren.some(k => this.enabledProperties.has(k));
+          if (!hasOther) {
+            this.enabledProperties.delete(partnerParentKey);
+          }
+        }
       }
     }
 
@@ -134,6 +199,20 @@ export class SoundEventState {
     }
   }
 
+  _enforceToggleDependenciesConsistency() {
+    for (const key of Array.from(this.enabledProperties)) {
+      const parentKey = CHILD_TO_PARENT_MAP.get(key);
+      if (parentKey && !this.enabledProperties.has(parentKey)) {
+        this.enabledProperties.add(parentKey);
+        const pCur = this.propertyValues[parentKey];
+        if (!(parentKey in this.propertyValues) || pCur === undefined) {
+          const pDef = DEFAULTS[parentKey] !== undefined ? DEFAULTS[parentKey] : true;
+          this.propertyValues[parentKey] = JSON.parse(JSON.stringify(pDef));
+        }
+      }
+    }
+  }
+
   getActiveProperties() {
     const result = {};
     for (const key of this.enabledProperties) {
@@ -157,6 +236,7 @@ export class SoundEventState {
       this.propertyValues[k] = v;
     }
     this._enforceMinMaxPairConsistency();
+    this._enforceToggleDependenciesConsistency();
     this.notify();
     return true;
   }
@@ -200,6 +280,8 @@ export class SoundEventState {
         }
       }
       this._enforceMinMaxPairConsistency();
+      this._enforceToggleDependenciesConsistency();
+      this._enforceToggleDependenciesConsistency();
       this.notify();
       return true;
     } catch (e) {
@@ -250,6 +332,7 @@ export class SoundEventState {
         }
       }
       this._enforceMinMaxPairConsistency();
+      this._enforceToggleDependenciesConsistency();
       if (typeof data.includeComments === "boolean") this.includeComments = data.includeComments;
       if (data.lang) this.lang = data.lang;
       if (data.theme) this.theme = data.theme;

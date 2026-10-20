@@ -3,7 +3,7 @@
  * Pure Vanilla ES Modules, Responsive Split-Pane Layout.
  */
 
-import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP } from "./schema.js";
+import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP, CHILD_TO_PARENT_MAP } from "./schema.js";
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
@@ -246,21 +246,23 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
   row.setAttribute("data-prop-key", key);
 
   const pairInfo = MIN_MAX_MAP.get(key);
+  const children = TOGGLE_DEPENDENTS[key];
+  const parentKey = CHILD_TO_PARENT_MAP.get(key);
   const label = t.labels[key] || key;
   const desc = t.tooltips[key] || "";
 
-  // Helper to synchronize partner row DOM state for min/max pairs
-  function syncPartnerRow(partnerKey, isPartnerEnabled) {
-    const pRow = document.querySelector(`[data-prop-key="${partnerKey}"]`);
+  // Helper to synchronize any row DOM state (checkbox, highlight class, group badge)
+  function setRowEnabledState(propKey, isPropEnabled) {
+    const pRow = document.querySelector(`[data-prop-key="${propKey}"]`);
     if (pRow) {
-      if (isPartnerEnabled) {
+      if (isPropEnabled) {
         pRow.classList.add("enabled");
       } else {
         pRow.classList.remove("enabled");
       }
       const pCb = pRow.querySelector(".custom-checkbox");
-      if (pCb) pCb.checked = isPartnerEnabled;
-      const pGroup = SPECS[partnerKey]?.group;
+      if (pCb) pCb.checked = isPropEnabled;
+      const pGroup = SPECS[propKey]?.group;
       if (pGroup) updateGroupBadge(pGroup);
     }
   }
@@ -301,6 +303,14 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     ? `<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help" title="成对关联属性: ${pairInfo.partner}">⇄ ${pairInfo.role.toUpperCase()}</span>`
     : "";
 
+  const parentBadge = children
+    ? `<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 select-none cursor-help" title="父控制项: 勾选附带 ${children.join(', ')}">↱ PARENT</span>`
+    : "";
+
+  const childBadge = parentKey
+    ? `<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/50 select-none cursor-help" title="依赖父控制项: ${parentKey}">↳ SUB</span>`
+    : "";
+
   const labelWrap = document.createElement("div");
   labelWrap.className = "flex-1 min-w-0 leading-tight";
   labelWrap.innerHTML = `
@@ -308,6 +318,8 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       <span class="text-xs font-medium text-gray-900 dark:text-gray-100">${label}</span>
       <span class="text-[11px] font-mono text-gray-400 select-all">${key}</span>
       ${pairBadge}
+      ${parentBadge}
+      ${childBadge}
     </div>
   `;
 
@@ -331,8 +343,14 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
       checkbox.checked = true;
       row.classList.add("enabled");
       if (pairInfo) {
-        syncPartnerRow(pairInfo.partner, true);
+        setRowEnabledState(pairInfo.partner, true);
         syncPartnerInputs(pairInfo.partner);
+      }
+      if (children) {
+        children.forEach(ck => setRowEnabledState(ck, true));
+      }
+      if (parentKey) {
+        setRowEnabledState(parentKey, true);
       }
       updateGroupBadge(spec.group);
       if (activeFilterBadge) activeFilterBadge.textContent = state.enabledProperties.size;
@@ -346,26 +364,33 @@ function createPropertyRow(key, spec, val, isEnabled, t) {
     if (isNowChecked) {
       row.classList.add("enabled");
       if (pairInfo) {
-        syncPartnerRow(pairInfo.partner, true);
+        setRowEnabledState(pairInfo.partner, true);
         syncPartnerInputs(pairInfo.partner);
       }
-      if (TOGGLE_DEPENDENTS[key]) {
-        TOGGLE_DEPENDENTS[key].forEach(depKey => {
-          state.setPropertyEnabled(depKey, true);
-          const depRow = document.querySelector(`[data-prop-key="${depKey}"]`);
-          if (depRow) {
-            depRow.classList.add("enabled");
-            const depCb = depRow.querySelector(".custom-checkbox");
-            if (depCb) depCb.checked = true;
-            const depGroup = SPECS[depKey]?.group;
-            if (depGroup) updateGroupBadge(depGroup);
-          }
+      if (children) {
+        children.forEach(ck => {
+          setRowEnabledState(ck, true);
+          const cPair = MIN_MAX_MAP.get(ck);
+          if (cPair) setRowEnabledState(cPair.partner, true);
         });
+      }
+      if (parentKey) {
+        setRowEnabledState(parentKey, true);
       }
     } else {
       row.classList.remove("enabled");
       if (pairInfo) {
-        syncPartnerRow(pairInfo.partner, false);
+        setRowEnabledState(pairInfo.partner, false);
+      }
+      if (children) {
+        children.forEach(ck => {
+          setRowEnabledState(ck, false);
+          const cPair = MIN_MAX_MAP.get(ck);
+          if (cPair) setRowEnabledState(cPair.partner, false);
+        });
+      }
+      if (parentKey && !state.enabledProperties.has(parentKey)) {
+        setRowEnabledState(parentKey, false);
       }
     }
     updateGroupBadge(spec.group);

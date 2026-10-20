@@ -1829,6 +1829,13 @@ PAIRED.forEach(([minKey, maxKey]) => {
   MIN_MAX_MAP.set(maxKey, { role: "max", partner: minKey });
 });
 
+export const CHILD_TO_PARENT_MAP = new Map();
+for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
+  for (const childKey of children) {
+    CHILD_TO_PARENT_MAP.set(childKey, parentKey);
+  }
+}
+
 export const DSP_PRESETS = [
   "reverb_2_crawlSpace",
   "reverb_3_smallTunnels",
