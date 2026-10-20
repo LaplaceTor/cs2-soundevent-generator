@@ -216,7 +216,17 @@ export const I18N = {
     "voice_looped_culling_update_time": "循环语音通道剔除检测间隔 (秒)",
     "randomize_start_time": "从音频文件内随机起播位置 (避免同相位叠加)",
     "restart_startpoint_03": "音轨 3 循环重启播放位置 (秒)",
-    "retrigger_keepalive_override": "csgo_mega 重触发保活生命周期覆盖 (秒)"
+    "retrigger_keepalive_override": "csgo_mega 重触发保活生命周期覆盖 (秒)",
+    "suppression_enable": "启用消音器抑制模式 (Suppression)",
+    "suppression_volume_multiplier": "消音音量乘数 (Suppression Volume Multiplier)",
+    "suppression_falloff_multiplier": "消音衰减距离乘数 (Suppression Falloff Multiplier)",
+    "use_ambient_entity_position": "启用环境实体定位 (Use Ambient Entity Position)",
+    "ambient_entity_name": "关联环境实体名称 (Ambient Entity Name)",
+    "vsnd_selection_type": "音频切片选取模式 (Selection Type)",
+    "vsnd_weights": "音频切片权重分配数组 (Weights)",
+    "use_mode_music_volume": "受游戏模式音乐音量控制",
+    "_auto_calc_vnsd_duration_": "编译器自动计算时长 (_auto_calc_vnsd_duration_)",
+    "metadata": "引擎元数据标签列表 (Metadata Tags)"
 },
     tooltips: {
     "volume": "基础播放音量。实际最终音量还会受到随机音量偏移、衰减曲线、混音组增益以及控制台音量变量的乘法影响。",
@@ -357,7 +367,17 @@ export const I18N = {
     "randomize_start_time": "在 VSND 音频时长内随机选取起始播放点，避免多个相同循环音效产生相位抵消。",
     "restart_startpoint_03": "csgo_music 堆栈中音轨 3 循环重启时的起播时间点（秒）。",
     "source_soundscape": "当前声音堆栈引用的 Soundscape 声景源标识。",
-    "retrigger_keepalive_override": "csgo_mega 堆栈在执行重触发时覆盖内部保活生命周期的秒数。"
+    "retrigger_keepalive_override": "csgo_mega 堆栈在执行重触发时覆盖内部保活生命周期的秒数。",
+    "suppression_enable": "为武器射击事件启用消音逻辑。在装上消音器（如 USP-S / M4A1-S）时降低射击音量和听觉感知距离。",
+    "suppression_volume_multiplier": "装上消音器时应用于基础音量的乘数，官方标准推荐值为 0.07。",
+    "suppression_falloff_multiplier": "装上消音器时应用于距离衰减曲线的乘数，官方标准推荐值为 0.2。",
+    "use_ambient_entity_position": "指示环境音效从地图中指定的实体（如 snd_opvar_set 或环境逻辑实体）坐标处发声。",
+    "ambient_entity_name": "与当前环境声音关联的目标实体名称。",
+    "vsnd_selection_type": "当 vsnd_files 包含多个音频切片时选取切片的方式（random 随机、random_weighted 权重随机、round_robin 轮询、sequential 顺序）。",
+    "vsnd_weights": "配合 random_weighted 模式使用，定义各个音频切片的被选权重概率数组（如 [0.8, 0.2]）。",
+    "use_mode_music_volume": "是否受不同游戏模式专属音乐音量滑条的控制。",
+    "_auto_calc_vnsd_duration_": "Source 2 资源编译参数。设为 false 时将严格遵循配置中的 vsnd_duration 而非重新计算。",
+    "metadata": "附加到声音事件上的引擎底层元数据标签数组，例如 ['meta', 'localplayeronly']。"
 }
   },
   en: {
@@ -572,7 +592,17 @@ export const I18N = {
     "voice_looped_culling_update_time": "voice_looped_culling_update_time",
     "randomize_start_time": "randomize_start_time",
     "restart_startpoint_03": "restart_startpoint_03",
-    "retrigger_keepalive_override": "retrigger_keepalive_override"
+    "retrigger_keepalive_override": "retrigger_keepalive_override",
+    "suppression_enable": "suppression_enable",
+    "suppression_volume_multiplier": "suppression_volume_multiplier",
+    "suppression_falloff_multiplier": "suppression_falloff_multiplier",
+    "use_ambient_entity_position": "use_ambient_entity_position",
+    "ambient_entity_name": "ambient_entity_name",
+    "vsnd_selection_type": "vsnd_selection_type",
+    "vsnd_weights": "vsnd_weights",
+    "use_mode_music_volume": "use_mode_music_volume",
+    "_auto_calc_vnsd_duration_": "_auto_calc_vnsd_duration_",
+    "metadata": "metadata"
 },
     tooltips: {
     "volume": "Base playback volume. Random offsets, curves, mixgroup gain and volume convars can modify the final level.",
@@ -713,7 +743,17 @@ export const I18N = {
     "randomize_start_time": "Randomizes the initial seek/start time within the VSND.",
     "restart_startpoint_03": "Third csgo_music restart startpoint, alongside Restart Startpoint 01 and 02.",
     "source_soundscape": "Soundscape source referenced by the event stack.",
-    "retrigger_keepalive_override": "Retrigger lifetime/keepalive override used by the csgo_mega stack."
+    "retrigger_keepalive_override": "Retrigger lifetime/keepalive override used by the csgo_mega stack.",
+    "suppression_enable": "Enables weapon silencer suppression logic, reducing volume and audible range when suppressed.",
+    "suppression_volume_multiplier": "Volume multiplier applied when suppressor is attached (official standard: 0.07).",
+    "suppression_falloff_multiplier": "Distance falloff multiplier applied when suppressor is attached (official standard: 0.2).",
+    "use_ambient_entity_position": "Positions ambient sound at the coordinates of a specified map entity.",
+    "ambient_entity_name": "Target entity name in the map to bind ambient sound emission.",
+    "vsnd_selection_type": "Selection mode for multiple vsnd files (random, random_weighted, round_robin, sequential).",
+    "vsnd_weights": "Weight array corresponding to vsnd files when using random_weighted selection.",
+    "use_mode_music_volume": "Whether track volume respects game mode music volume settings.",
+    "_auto_calc_vnsd_duration_": "Compiler flag: if false, preserves specified vsnd_duration without recalculation.",
+    "metadata": "Array of engine metadata tags for this sound event, e.g. ['meta', 'localplayeronly']."
 }
   }
 };

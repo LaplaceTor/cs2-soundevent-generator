@@ -3,7 +3,7 @@
  * Pure Vanilla ES Modules, Responsive Split-Pane Layout.
  */
 
-import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP, CHILD_TO_PARENT_MAP } from "./schema.js";
+import { GROUPS, SPECS, DEFAULTS, TOGGLE_DEPENDENTS, PRESETS, MIXGROUPS, DSP_PRESETS, TYPE_OBJECTS, TYPE_DESCRIPTIONS, COMMON_BASE_EVENTS, typeNeedsValue, MIN_MAX_MAP, CHILD_TO_PARENT_MAP } from "./schema.js";
 import { I18N } from "./i18n.js";
 import { SoundEventState } from "./state.js";
 import { serializeSoundEvent, normalizeVsndPath, validateKv3, formatKv3Text } from "./kv3.js";
@@ -90,12 +90,13 @@ function updateI18nUI() {
   const curPreset = presetSelect.value;
   presetSelect.innerHTML = "";
   for (const [pId, pObj] of Object.entries(PRESETS)) {
+    if (pId !== pObj.id) continue;
     const opt = document.createElement("option");
     opt.value = pId;
     opt.textContent = state.lang === "zh" ? pObj.name_zh : pObj.name_en;
     presetSelect.appendChild(opt);
   }
-  presetSelect.value = curPreset || "generic_3d";
+  presetSelect.value = curPreset || "csgo_mega_basic";
 }
 
 /**
@@ -571,12 +572,60 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     return;
   }
 
-  // 3. Combobox (Mixgroup, DSP preset, Type)
+  // 3. Dedicated Type Selector (Strict list only, accompanied by usage scenario description)
+  if (key === "type" || kind === "type_select") {
+    const wrap = document.createElement("div");
+    wrap.className = "w-full space-y-2";
+
+    const select = document.createElement("select");
+    select.className = "w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer font-medium";
+
+    for (const tKey of TYPE_OBJECTS) {
+      const opt = document.createElement("option");
+      opt.value = tKey;
+      const desc = TYPE_DESCRIPTIONS[tKey];
+      const label = desc ? (state.lang === "zh" ? `${tKey} — ${desc.name_zh}` : `${tKey} — ${desc.name_en}`) : tKey;
+      opt.textContent = label;
+      select.appendChild(opt);
+    }
+    select.value = val || TYPE_OBJECTS[0];
+
+    // Scenario description card
+    const descCard = document.createElement("div");
+    descCard.className = "p-2.5 rounded border border-gray-200/80 dark:border-gray-800/80 bg-gray-50/70 dark:bg-gray-900/40 text-[11px] leading-relaxed";
+
+    const updateDesc = (curType) => {
+      const desc = TYPE_DESCRIPTIONS[curType];
+      const title = state.lang === "zh" ? "适用场景" : "Usage Scenario";
+      const text = desc ? (state.lang === "zh" ? desc.desc_zh : desc.desc_en) : "";
+      descCard.innerHTML = `
+        <div class="flex items-start gap-1.5">
+          <span class="inline-block px-1 py-0.2 text-[9px] font-semibold uppercase tracking-wider bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded whitespace-nowrap flex-shrink-0 mt-0.5">${title}</span>
+          <span class="text-gray-600 dark:text-gray-300 font-sans">${text}</span>
+        </div>
+      `;
+    };
+
+    updateDesc(select.value);
+
+    select.addEventListener("change", (e) => {
+      const newType = e.target.value;
+      updateDesc(newType);
+      onUserEdit(newType);
+      handleTypeChange(newType);
+    });
+
+    wrap.appendChild(select);
+    wrap.appendChild(descCard);
+    container.appendChild(wrap);
+    return;
+  }
+
+  // 4. Combobox (Mixgroup, DSP preset)
   if (kind === "combobox") {
     let options = spec.options?.objects || [];
     if (key === "mixgroup") options = MIXGROUPS;
     else if (key === "dsp_preset") options = DSP_PRESETS;
-    else if (key === "type") options = TYPE_OBJECTS;
 
     const wrap = document.createElement("div");
     wrap.className = "flex gap-2";
@@ -595,13 +644,11 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     select.addEventListener("change", (e) => {
       textInput.value = e.target.value;
       onUserEdit(e.target.value);
-      if (key === "type") handleTypeChange(e.target.value);
     });
 
     textInput.addEventListener("input", (e) => {
       select.value = e.target.value;
       onUserEdit(e.target.value);
-      if (key === "type") handleTypeChange(e.target.value);
     });
 
     wrap.appendChild(select);
@@ -671,6 +718,58 @@ function renderControlWidget(container, key, spec, val, t, onUserEdit) {
     });
 
     container.appendChild(wrap);
+    return;
+  }
+
+  // 5.1 Vector2
+  if (kind === "vector2") {
+    const vec = Array.isArray(val) ? [...val] : [0.8, 0.2];
+    const wrap = document.createElement("div");
+    wrap.className = "grid grid-cols-2 gap-2";
+
+    ["1", "2"].forEach((axis, idx) => {
+      const item = document.createElement("div");
+      item.className = "flex items-center gap-1.5 px-2 py-1 border border-gray-200 dark:border-gray-800 rounded";
+      item.innerHTML = `<span class="text-[10px] font-mono text-gray-400">#${axis}</span>`;
+
+      const numInput = document.createElement("input");
+      numInput.type = "number";
+      numInput.className = "w-full font-mono text-xs bg-transparent outline-none text-right";
+      numInput.value = vec[idx] ?? 0;
+      numInput.step = "0.05";
+
+      numInput.addEventListener("input", (e) => {
+        const newVec = [...vec];
+        newVec[idx] = parseFloat(e.target.value) || 0;
+        onUserEdit(newVec);
+      });
+
+      item.appendChild(numInput);
+      wrap.appendChild(item);
+    });
+
+    container.appendChild(wrap);
+    return;
+  }
+
+  // 5.2 Array of strings or floats (Metadata tags, syncpoints)
+  if (kind === "array_string" || kind === "array_float") {
+    const isNum = kind === "array_float";
+    const textVal = Array.isArray(val) ? val.join(", ") : String(val || "");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400";
+    input.value = textVal;
+    input.placeholder = isNum ? "例如: 0.0, 2.0, 4.0" : '例如: "meta", "localplayeronly"';
+    input.addEventListener("input", (e) => {
+      const parts = e.target.value.split(/[\s,]+/).filter(Boolean);
+      if (isNum) {
+        onUserEdit(parts.map(Number));
+      } else {
+        onUserEdit(parts.map(p => p.replace(/^["']|["']$/g, "")));
+      }
+    });
+    container.appendChild(input);
     return;
   }
 
@@ -1169,11 +1268,11 @@ function initEventListeners() {
 
   // Reset
   resetBtn.addEventListener("click", () => {
-    state.applyPreset("generic_3d");
+    state.applyPreset("csgo_mega_basic");
     eventNameInput.value = state.eventName;
-    presetSelect.value = "generic_3d";
+    presetSelect.value = "csgo_mega_basic";
     renderGroups();
-    showToast(state.lang === "zh" ? "已重置为默认 3D 空间预设" : "Reset to default 3D preset");
+    showToast(state.lang === "zh" ? "已重置为默认 3D 空间预设 (基础版)" : "Reset to default 3D spatial preset (Basic)");
   });
 
   // Search

@@ -354,7 +354,7 @@ export class SoundEventState {
 
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        this.applyPreset("generic_3d");
+        this.applyPreset("csgo_mega_basic");
         return false;
       }
       const data = JSON.parse(raw);
@@ -376,7 +376,7 @@ export class SoundEventState {
       return true;
     } catch (e) {
       console.warn("Failed to load local state:", e);
-      this.applyPreset("generic_3d");
+      this.applyPreset("csgo_mega_basic");
       return false;
     }
   }

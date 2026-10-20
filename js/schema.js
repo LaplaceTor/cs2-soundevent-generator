@@ -74,12 +74,15 @@ export const COLLAPSED_BY_DEFAULT = new Set(["advanced"]);
 
 export const SPECS = {
   "type": {
-    "kind": "combobox",
+    "kind": "type_select",
     "group": "general",
     "options": {
       "objects": [
         "csgo_mega",
-        "csgo_music"
+        "csgo_music",
+        "csgo_ambient",
+        "csgo_surf",
+        "csgo_movie"
       ]
     }
   },
@@ -150,10 +153,10 @@ export const SPECS = {
     "group": "playback",
     "options": {
       "slider_range": [
-        0,
-        10
+        -1.0,
+        5.0
       ],
-      "only_positive": true
+      "only_positive": false
     }
   },
   "pitch_random_min": {
@@ -373,10 +376,10 @@ export const SPECS = {
     "group": "position",
     "options": {
       "slider_range": [
-        -5000.0,
-        5000.0
+        0.0,
+        10000.0
       ],
-      "only_positive": false
+      "only_positive": true
     }
   },
   "randomize_position_hemisphere": {
@@ -581,8 +584,8 @@ export const SPECS = {
     "group": "occlusion",
     "options": {
       "slider_range": [
-        0,
-        1
+        0.0,
+        2.0
       ],
       "only_positive": true
     }
@@ -681,8 +684,8 @@ export const SPECS = {
     "group": "retrigger",
     "options": {
       "slider_range": [
-        0,
-        60
+        0.0,
+        200.0
       ],
       "only_positive": true
     }
@@ -693,7 +696,7 @@ export const SPECS = {
     "options": {
       "slider_range": [
         0.0,
-        60.0
+        600.0
       ],
       "only_positive": true
     }
@@ -704,7 +707,7 @@ export const SPECS = {
     "options": {
       "slider_range": [
         0.0,
-        20000.0
+        100000.0
       ],
       "only_positive": true
     }
@@ -1032,17 +1035,17 @@ export const SPECS = {
     }
   },
   "syncpoints_01": {
-    "kind": "legacy",
+    "kind": "array_float",
     "group": "music",
     "options": {}
   },
   "syncpoints_02": {
-    "kind": "legacy",
+    "kind": "array_float",
     "group": "music",
     "options": {}
   },
   "syncpoints_03": {
-    "kind": "legacy",
+    "kind": "array_float",
     "group": "music",
     "options": {}
   },
@@ -1279,6 +1282,75 @@ export const SPECS = {
       ],
       "only_positive": true
     }
+  },
+  "suppression_enable": {
+    "kind": "bool",
+    "group": "playback",
+    "options": {}
+  },
+  "suppression_volume_multiplier": {
+    "kind": "float",
+    "group": "playback",
+    "options": {
+      "slider_range": [
+        0.0,
+        1.0
+      ],
+      "only_positive": true
+    }
+  },
+  "suppression_falloff_multiplier": {
+    "kind": "float",
+    "group": "playback",
+    "options": {
+      "slider_range": [
+        0.0,
+        1.0
+      ],
+      "only_positive": true
+    }
+  },
+  "use_ambient_entity_position": {
+    "kind": "bool",
+    "group": "position",
+    "options": {}
+  },
+  "ambient_entity_name": {
+    "kind": "string",
+    "group": "position",
+    "options": {}
+  },
+  "vsnd_selection_type": {
+    "kind": "combobox",
+    "group": "files",
+    "options": {
+      "objects": [
+        "random",
+        "random_weighted",
+        "round_robin",
+        "sequential"
+      ]
+    }
+  },
+  "vsnd_weights": {
+    "kind": "vector2",
+    "group": "files",
+    "options": {}
+  },
+  "use_mode_music_volume": {
+    "kind": "bool",
+    "group": "music",
+    "options": {}
+  },
+  "_auto_calc_vnsd_duration_": {
+    "kind": "bool",
+    "group": "advanced",
+    "options": {}
+  },
+  "metadata": {
+    "kind": "array_string",
+    "group": "advanced",
+    "options": {}
   }
 };
 
@@ -1289,7 +1361,17 @@ export const DEFAULTS = {
   "volume_random_min": -0.5,
   "volume_random_max": 0.5,
   "pitch_random_min": -0.5,
-  "pitch_random_max": -0.5,
+  "pitch_random_max": 0.5,
+  "suppression_enable": false,
+  "suppression_volume_multiplier": 0.07,
+  "suppression_falloff_multiplier": 0.2,
+  "use_ambient_entity_position": false,
+  "ambient_entity_name": "",
+  "vsnd_selection_type": "random",
+  "vsnd_weights": [0.8, 0.2],
+  "use_mode_music_volume": true,
+  "_auto_calc_vnsd_duration_": false,
+  "metadata": ["meta"],
   "randomize_position_min_radius": 2000,
   "randomize_position_max_radius": 3000,
   "retrigger_interval_min": 10,
@@ -1730,6 +1812,9 @@ export const TOGGLE_DEPENDENTS = {
   "use_distance_pitch_mapping_curve": [
     "distance_pitch_mapping_curve"
   ],
+  "use_distance_effect_mix_mapping_curve": [
+    "distance_effect_mix_mapping_curve"
+  ],
   "use_time_volume_mapping_curve": [
     "time_volume_mapping_curve"
   ],
@@ -1738,6 +1823,34 @@ export const TOGGLE_DEPENDENTS = {
   ],
   "use_fadetime_volume_mapping_curve": [
     "fadetime_volume_mapping_curve"
+  ],
+  "use_fadetime_pitch_mapping_curve": [
+    "fadetime_pitch_mapping_curve"
+  ],
+  "use_fadetime_delay_mapping_curve": [
+    "fadetime_delay_mapping_curve"
+  ],
+  "use_fadetime_fade_in_mapping_curve": [
+    "fadetime_fade_in_mapping_curve"
+  ],
+  "use_fadetime_fade_out_mapping_curve": [
+    "fadetime_fade_out_mapping_curve"
+  ],
+  "use_world_position": [
+    "position",
+    "randomize_position_min_radius",
+    "randomize_position_max_radius",
+    "randomize_position_hemisphere_only"
+  ],
+  "use_ambient_entity_position": [
+    "ambient_entity_name"
+  ],
+  "suppression_enable": [
+    "suppression_volume_multiplier",
+    "suppression_falloff_multiplier"
+  ],
+  "vsnd_selection_type": [
+    "vsnd_weights"
   ],
   "use_velocity_volume_curve": [
     "velocity_volume_curve",
@@ -1787,6 +1900,31 @@ export const TOGGLE_DEPENDENTS = {
   "set_mixlayer_amount_enable": [
     "set_mixlayer_layer",
     "time_mixlayer_amount_curve"
+  ],
+  "loop_track": [
+    "startpoint_01",
+    "endpoint_01",
+    "syncpoints_01"
+  ],
+  "update_track_syncpoint_index": [
+    "syncpoints_01"
+  ],
+  "limiter_on": [
+    "limiter_max",
+    "limiter_event_name",
+    "limiter_match_entity",
+    "limiter_match_event_type",
+    "limiter_stop_oldest"
+  ],
+  "occlusion_override": [
+    "occlusion_min_wall_thickness",
+    "occlusion_db_loss",
+    "occlusion_bounces",
+    "occlusion_rays"
+  ],
+  "hrtf_on": [
+    "hrtf_mix",
+    "hrtf_distance_behind"
   ]
 };
 
@@ -1810,6 +1948,31 @@ export const PAIRED = [
     "randomize_position_min_radius",
     "randomize_position_max_radius",
     "Randomize Position Radius"
+  ],
+  [
+    "suppression_volume_multiplier",
+    "suppression_falloff_multiplier",
+    "Suppression Multipliers"
+  ],
+  [
+    "startpoint_01",
+    "endpoint_01",
+    "Track 01 Loop Range"
+  ],
+  [
+    "startpoint_02",
+    "endpoint_02",
+    "Track 02 Loop Range"
+  ],
+  [
+    "startpoint_03",
+    "endpoint_03",
+    "Track 03 Loop Range"
+  ],
+  [
+    "startpoint_04",
+    "endpoint_04",
+    "Track 04 Loop Range"
   ],
   [
     "volume_fade_initial_input_min",
@@ -1837,6 +2000,17 @@ for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
 }
 
 export const DSP_PRESETS = [
+  "core.auto",
+  "core.null",
+  "core.chamber.medium",
+  "core.concrete.large",
+  "core.concrete.medium",
+  "core.metallic.medium",
+  "core.metallic.small",
+  "core.outside.large",
+  "core.outside.small",
+  "core.tunnel.medium",
+  "core.tunnel.small",
   "reverb_2_crawlSpace",
   "reverb_3_smallTunnels",
   "reverb_4_smallCarpetRoom",
@@ -1846,7 +2020,8 @@ export const DSP_PRESETS = [
   "reverb_8_mediumCarpetRoom",
   "reverb_9_mediumChamber",
   "reverb_10_warehouse",
-  "reverb_11_smallBright9",
+  "reverb_10_massiveHanger",
+  "reverb_11_smallBright",
   "reverb_12_mediumBright",
   "reverb_13_largeBright",
   "reverb_14_brightHallway",
@@ -1859,15 +2034,51 @@ export const DSP_PRESETS = [
   "reverb_21_outsideStreet",
   "reverb_22_outsideOpen",
   "reverb_23_smallBathroom",
-  "reverb_24_largeBathroom"
+  "reverb_24_largeBathroom",
+  "reverb_25_massiveHanger",
+  "reverb_29_UI"
 ];
 
 export const TYPE_OBJECTS = [
   "csgo_mega",
   "csgo_music",
-  "csgo_set_volume",
-  "hlvr_set_soundevent_volume"
+  "csgo_ambient",
+  "csgo_surf",
+  "csgo_movie"
 ];
+
+export const TYPE_DESCRIPTIONS = {
+  csgo_mega: {
+    name_zh: '通用 3D 空间音频 (csgo_mega)',
+    name_en: 'Generic 3D Spatial Audio (csgo_mega)',
+    desc_zh: 'CS2 核心空间音频堆栈（官方覆盖率约 90%）。适用于绝大多数 3D 实体声音、武器枪声与换弹、爆炸、脚步声、道具投掷、常规环境音以及带有距离衰减、几何遮挡与空间混响的游戏内音效。',
+    desc_en: 'Core CS2 spatial audio stack (~90% of all official sounds). Ideal for 3D world entities, weapon gunfire/reloading, explosions, footsteps, grenade bounces, standard ambient sounds, and any audio requiring distance attenuation, occlusions, and environmental reverb.'
+  },
+  csgo_music: {
+    name_zh: '交互式分段音乐 (csgo_music)',
+    name_en: 'Interactive Track System (csgo_music)',
+    desc_zh: '官方交互式音乐系统。专用于主菜单音乐、回合开始/结束、MVP 音效、炸弹安放倒计时与十秒警告等。支持节拍切片对齐 (syncpoints)、平滑交叉淡入淡出、按回合状态停止以及音轨随机加权挑选。',
+    desc_en: 'Official interactive music system. Designed for main menu tracks, round start/end, MVP anthems, bomb plant countdowns, and 10-second warnings. Supports beat-aligned syncpoints, smooth crossfades, round-state stopping, and weighted track variations.'
+  },
+  csgo_ambient: {
+    name_zh: '地图实体多段环境声景 (csgo_ambient)',
+    name_en: 'Entity Ambience Soundscape (csgo_ambient)',
+    desc_zh: '多段式实体环境音效。专用于绑定地图环境实体 (snd_ambient_entity)，常用于水流、瀑布、风道管道或大型机械轰鸣等具有复杂多段内外距离衰减、空间回响与位置随机化的地图环境声景。',
+    desc_en: 'Multi-stage entity ambience stack. Dedicated to map ambient entities (snd_ambient_entity) such as waterfalls, wind tunnels, vents, or mechanical hums requiring complex multi-range attenuation curves, spatial reverb, and position randomization.'
+  },
+  csgo_surf: {
+    name_zh: '滑坡与表面物理运动 (csgo_surf)',
+    name_en: 'Surf & Velocity Slide (csgo_surf)',
+    desc_zh: '滑坡与物理运动动态音效。根据玩家或物体的移动速度 (Velocity) 动态实时调制音量和频率均衡 (EQ)，专用于滑坡、物理表面摩擦及水上滑行音效。',
+    desc_en: 'Dynamic velocity-driven surface physics. Modulates volume and frequency equalization (EQ) in real time based on player movement velocity. Designed for surf on ramps, surface friction and water skimming sounds.'
+  },
+  csgo_movie: {
+    name_zh: '全景视频/电影音轨容器 (csgo_movie)',
+    name_en: 'Panorama Movie Audio (csgo_movie)',
+    desc_zh: '全景视频音轨容器。专用于 CS2 全景 UI (Panorama) 中播放 WebM / MP4 等视频伴音的回放控制。',
+    desc_en: 'Panorama UI movie audio container. Designed for playing accompanied soundtrack audio in Panorama UI WebM/MP4 video popups and background cinematic playback.'
+  }
+};
 
 /**
  * Checks whether a SoundEvent Type requires the 'value' (通用数值参数) property
@@ -1879,28 +2090,44 @@ export function typeNeedsValue(typeName) {
 }
 
 export const MIXGROUPS = [
-  "ArmsRace",
   "Weapons",
+  "WeaponsDistant",
+  "BulletImpacts",
+  "Explosions",
+  "ExplosionsDistant",
+  "Foley",
+  "Footsteps",
+  "Physics",
+  "Surf",
   "UI",
+  "UI_Amb",
   "voip",
-  "World",
+  "VO",
+  "Chickens",
+  "PlayerAttackerFeedback",
+  "PlayerDamage",
+  "PlayerVictim",
+  "KillCard",
   "Music",
   "BuyMusic",
   "DuckingMusic",
   "SelectedMusic",
-  "All",
-  "Footsteps",
-  "Foley",
-  "Physics",
-  "BulletImpacts",
-  "Explosions",
-  "ExplosionsDistant",
   "Ambient",
-  "WeaponsDistant",
-  "Exceptions",
   "Amb_Common",
-  "Aztec",
-  "Assault",
+  "World",
+  "Rush",
+  "Cache",
+  "Dust",
+  "Dust2",
+  "Mirage",
+  "Inferno",
+  "Nuke",
+  "Overpass",
+  "Vertigo",
+  "Ancient",
+  "Anubis",
+  "Italy",
+  "Office",
   "Baggage",
   "Bank",
   "Boathouse",
@@ -1909,20 +2136,13 @@ export const MIXGROUPS = [
   "Chateau",
   "Compound",
   "Coop",
-  "Dust",
-  "Dust2",
   "Havana",
   "House",
-  "Inferno",
-  "Italy",
   "Lunacy",
   "Militia",
   "Mill",
-  "Mirage",
+  "Monestary",
   "Monastery",
-  "Nuke",
-  "Office",
-  "Overpass",
   "Piranesi",
   "Port",
   "Prodigy",
@@ -1930,119 +2150,383 @@ export const MIXGROUPS = [
   "Shoots",
   "Train",
   "Training",
-  "Vertigo",
-  "PlayerDamage",
-  "KillCard",
-  "PlayerVictim",
-  "Anubis",
-  "VO"
+  "Tuscan",
+  "Aztec",
+  "Assault",
+  "ArmsRace",
+  "All",
+  "Exceptions"
 ];
 
 export const COMMON_BASE_EVENTS = [
+  { value: 'Base.Footstep', desc_zh: '通用脚步音效基类', desc_en: 'Base for footstep audio' },
+  { value: 'Base.Land', desc_zh: '落地缓冲音效基类', desc_en: 'Base for player landing' },
   { value: 'amb.base', desc_zh: '通用环境音效基类', desc_en: 'Base for ambient sounds' },
+  { value: 'base.rush.bg', desc_zh: 'Rush 地图环境背景基类', desc_en: 'Rush map ambient background base' },
   { value: 'Base.Weapon', desc_zh: '武器音效基类', desc_en: 'Base for weapon audio' },
-  { value: 'Base.Footsteps', desc_zh: '脚步音效基类', desc_en: 'Base for footstep audio' },
+  { value: 'Base.RainExterior', desc_zh: '室外雨声环境基类', desc_en: 'Base for exterior rain' },
   { value: 'UI.Base', desc_zh: 'UI/菜单音效基类', desc_en: 'Base for UI sounds' },
   { value: 'Physics.Base', desc_zh: '物理碰撞基类', desc_en: 'Base for physics sounds' },
   { value: 'Damage.Base', desc_zh: '受击伤害音效基类', desc_en: 'Base for damage sounds' }
 ];
 
 export const PRESETS = {
-  generic_3d: {
-    id: 'generic_3d',
-    name_zh: '3D 空间音效 (csgo_mega)',
-    name_en: '3D Spatial Sound (csgo_mega)',
-    eventName: 'SoundEvent_Custom.3D',
+  // === csgo_mega ===
+  csgo_mega_basic: {
+    id: 'csgo_mega_basic',
+    name_zh: '3D 空间音频 (基础版 - csgo_mega)',
+    name_en: '3D Spatial Audio (Basic - csgo_mega)',
+    eventName: 'Weapon_Custom.Single',
     properties: {
       type: 'csgo_mega',
-      mixgroup: 'Amb_Common',
-      vsnd_files_track_01: ['sounds/ambient/nature/wind_loop.vsnd'],
       volume: 1.0,
       pitch: 1.0,
-      use_world_position: true,
-      position: [0.0, 0.0, 0.0],
-      distance_effect_mix: 0.0,
+      mixgroup: 'Weapons',
+      reverb_wet: 1.0,
+      occlusion_intensity: 0.6,
+      distance_effect_mix: 1.0,
       use_distance_volume_mapping_curve: true,
       distance_volume_mapping_curve: [
-        [97.14, 1.0, -0.00176, -0.00176, 2, 3],
-        [2000.0, 0.0, -0.00052, -0.00052, 1, 1]
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [200.0, 1.0, 0.0, 0.0, 2, 3],
+        [1500.0, 0.1, -0.0006, -0.0006, 1, 1],
+        [3000.0, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      vsnd_files_track_01: ['sounds/weapons/custom/fire.vsnd']
+    }
+  },
+  csgo_mega_detailed: {
+    id: 'csgo_mega_detailed',
+    name_zh: '3D 空间音频 (详细完整版 - csgo_mega)',
+    name_en: '3D Spatial Audio (Detailed - csgo_mega)',
+    eventName: 'Weapon_AK47.CustomFull',
+    properties: {
+      type: 'csgo_mega',
+      preload_vsnds: true,
+      volume: 1.0,
+      volume_random_min: -0.05,
+      volume_random_max: 0.05,
+      pitch: 1.0,
+      pitch_random_min: -0.05,
+      pitch_random_max: 0.05,
+      mixgroup: 'Weapons',
+      position_offset: [0.0, 0.0, 60.0],
+      randomize_position_min_radius: 0.0,
+      randomize_position_max_radius: 10.0,
+      reverb_wet: 1.0,
+      reverb_source_wet: 1.0,
+      occlusion_intensity: 0.6,
+      occlusion_frequency_scale: 1.0,
+      distance_effect_mix: 1.0,
+      use_baked_occlusion: true,
+      restrict_source_reverb: false,
+      use_distance_volume_mapping_curve: true,
+      distance_volume_mapping_curve: [
+        [25.0, 1.0, 0.0, 0.0, 2, 3],
+        [250.0, 0.8, -0.001, -0.001, 1, 1],
+        [1500.0, 0.15, -0.0004, -0.0004, 1, 1],
+        [4000.0, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      use_distance_unfiltered_stereo_mapping_curve: true,
+      distance_unfiltered_stereo_mapping_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [80.0, 0.0, 0.0, 0.0, 2, 3],
+        [300.0, 0.0, 0.0, 0.0, 2, 3]
+      ],
+      use_fadetime_volume_mapping_curve: false,
+      fadetime_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [1.0, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      use_time_volume_mapping_curve: false,
+      time_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [2.0, 1.0, 0.0, 0.0, 2, 3]
+      ],
+      instance_limit: 2.0,
+      block_duration: 0.05,
+      block_distance: 64.0,
+      block_match_entity: true,
+      block_matching_events: true,
+      enable_child_events: false,
+      soundevent_01: 'Weapon_AK47.DistShoot',
+      set_child_position: true,
+      enable_retrigger: false,
+      retrigger_interval_min: 0.1,
+      retrigger_interval_max: 0.2,
+      retrigger_radius: 200.0,
+      suppression_enable: false,
+      suppression_volume_multiplier: 0.8,
+      suppression_falloff_multiplier: 0.9,
+      display_broadcast: false,
+      broadcast_distance_override: 9000.0,
+      is_ui_sound: false,
+      dsp_preset: 'reverb_01_smallRoom',
+      vsnd_duration: 1.5,
+      vsnd_files_track_01: ['sounds/weapons/ak47/ak47_shoot.vsnd']
+    }
+  },
+
+  // === csgo_music ===
+  csgo_music_basic: {
+    id: 'csgo_music_basic',
+    name_zh: '交互式背景音乐 (基础版 - csgo_music)',
+    name_en: 'Interactive Music (Basic - csgo_music)',
+    eventName: 'Music.CustomBasic',
+    properties: {
+      type: 'csgo_music',
+      volume: 0.8,
+      volume_convar: 'snd_menumusic_volume',
+      mixgroup: 'Music',
+      stop_music: 'true',
+      loop_track: 'true',
+      vsnd_files: 'sounds/music/custom_menu.vsnd'
+    }
+  },
+  csgo_music_detailed: {
+    id: 'csgo_music_detailed',
+    name_zh: '交互式背景音乐 (详细完整版 - csgo_music)',
+    name_en: 'Interactive Music (Detailed - csgo_music)',
+    eventName: 'Music.ActionTrack.Detailed',
+    properties: {
+      type: 'csgo_music',
+      volume: 0.85,
+      mixgroup: 'Music',
+      volume_convar: 'snd_menumusic_volume',
+      stop_music: 'true',
+      loop_track: 'true',
+      should_queue_track: 'true',
+      priority: 2.0,
+      priority_override: 'true',
+      startpoint_01: 0.0,
+      endpoint_01: 45.0,
+      startpoint_02: 45.0,
+      endpoint_02: 90.0,
+      startpoint_03: 90.0,
+      endpoint_03: 135.0,
+      syncpoints_01: [0.0, 4.0, 8.0, 12.0, 16.0],
+      syncpoints_02: [45.0, 49.0, 53.0, 57.0],
+      syncpoints_03: [90.0, 94.0, 98.0, 102.0],
+      volume_fade_out_input_max: 1.5,
+      volume_fade_initial_input_min: 2.0,
+      volume_fade_initial_input_max: 6.0,
+      volume_fade_initial_input_map_min: 1.0,
+      volume_fade_initial_input_map_max: 0.5,
+      join_non_mvp_group: 'true',
+      stop_start_round: 'true',
+      stop_match_end: 'true',
+      stop_loading: 'true',
+      stop_bomb_planted: 'true',
+      stop_won_mvp: 'true',
+      skip_if_muted: 'true',
+      vsnd_selection_type: 'random_weighted',
+      vsnd_weights: [0.7, 0.3],
+      use_mode_music_volume: true,
+      vsnd_duration: 135.0,
+      vsnd_files: [
+        'sounds/music/custom/track_variation_01.vsnd',
+        'sounds/music/custom/track_variation_02.vsnd'
       ]
     }
   },
-  debug_sound: {
-    id: 'debug_sound',
-    name_zh: '调试测试音效 (SoundDebug)',
-    name_en: 'Debug Pink Noise (SoundDebug)',
-    eventName: 'SoundEvent_Debug.Test',
+
+  // === csgo_ambient ===
+  csgo_ambient_basic: {
+    id: 'csgo_ambient_basic',
+    name_zh: '实体环境声景 (基础版 - csgo_ambient)',
+    name_en: 'Entity Ambience Soundscape (Basic - csgo_ambient)',
+    eventName: 'Ambient_Water.Sides',
     properties: {
-      base: 'amb.base',
-      vsnd_files_track_01: ['sounds/common/pink_noise_mono_loop.vsnd'],
-      position_relative_to_player: true,
-      volume: 1.0
+      type: 'csgo_ambient',
+      volume: 0.8,
+      mixgroup: 'Amb_Common',
+      reverb_wet: 1.0,
+      use_ambient_entity_position: true,
+      ambient_entity_name: 'snd_ambient_entity',
+      use_distance_volume_mapping_curve: true,
+      distance_volume_mapping_curve: [
+        [50.0, 1.0, 0.0, 0.0, 2, 3],
+        [500.0, 0.4, -0.001, -0.001, 1, 1],
+        [1200.0, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      vsnd_files_track_01: ['sounds/ambient/water/waterfall_sides.vsnd']
     }
   },
-  ui_sound: {
-    id: 'ui_sound',
-    name_zh: 'UI 界面音效 (2D)',
-    name_en: 'UI Menu Sound (2D)',
-    eventName: 'UI.CustomClick',
+  csgo_ambient_detailed: {
+    id: 'csgo_ambient_detailed',
+    name_zh: '实体环境声景 (详细完整版 - csgo_ambient)',
+    name_en: 'Entity Ambience Soundscape (Detailed - csgo_ambient)',
+    eventName: 'Ambient_Custom.Detailed',
     properties: {
-      type: 'csgo_mega',
+      type: 'csgo_ambient',
+      volume: 0.6,
+      pitch: 1.0,
+      pitch_random_min: -0.05,
+      pitch_random_max: 0.05,
+      volume_random_min: -0.05,
+      volume_random_max: 0.05,
+      mixgroup: 'Rush',
+      use_ambient_entity_position: true,
+      ambient_entity_name: 'snd_ambient_entity',
+      position: [0.0, 0.0, 0.0],
+      position_relative_to_player: false,
+      randomize_start_time: true,
+      randomize_position_min_radius: 50.0,
+      randomize_position_max_radius: 200.0,
+      reverb_wet: 1.0,
+      distance_effect_mix: 0.0,
+      occlusion_intensity: 0.5,
+      use_distance_volume_mapping_curve: true,
+      distance_volume_mapping_curve: [
+        [98.6, 1.0, -0.0026, -0.0026, 2, 3],
+        [427.7, 0.45, -0.0012, -0.0012, 3, 1],
+        [903.0, 0.0, -0.0005, -0.0005, 2, 3]
+      ],
+      use_distance_unfiltered_stereo_mapping_curve: false,
+      distance_unfiltered_stereo_mapping_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [300.0, 0.0, 0.0, 0.0, 2, 3]
+      ],
+      use_time_volume_mapping_curve: false,
+      time_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [2.0, 1.0, 0.0, 0.0, 2, 3]
+      ],
+      fadetime_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [1.5, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      enable_retrigger: true,
+      retrigger_interval_min: 5.0,
+      retrigger_interval_max: 12.0,
+      retrigger_radius: 800.0,
+      instance_limit: 4.0,
+      block_match_entity: false,
+      block_matching_events: false,
+      set_child_position: false,
+      vsnd_duration: 10.5,
+      vsnd_files_track_01: ['sounds/ambient/water/rush_waterfall_sides.vsnd']
+    }
+  },
+
+  // === csgo_surf ===
+  csgo_surf_basic: {
+    id: 'csgo_surf_basic',
+    name_zh: '滑坡与表面物理 (基础版 - csgo_surf)',
+    name_en: 'Surf & Velocity Slide (Basic - csgo_surf)',
+    eventName: 'Player.Surf.Fast',
+    properties: {
+      type: 'csgo_surf',
+      mixgroup: 'Surf',
+      volume: 0.15,
+      pitch: 1.0,
+      velocity_volume_seek_speed: 700.0,
+      use_velocity_volume_curve: true,
+      velocity_volume_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [700.0, 1.0, 0.0, 0.0, 1, 1]
+      ],
+      use_volume_convar: true,
+      volume_convar: 'snd_surf_volume_slide',
+      distance_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [90.0, 1.0, -0.01, -0.01, 3, 1],
+        [1200.0, 0.0, 0.0, 0.0, 2, 3]
+      ],
+      vsnd_files_track_01: ['sounds/player/surf/surf_slide_loop.vsnd']
+    }
+  },
+  csgo_surf_detailed: {
+    id: 'csgo_surf_detailed',
+    name_zh: '滑坡与表面物理 (详细完整版 - csgo_surf)',
+    name_en: 'Surf & Velocity Slide (Detailed - csgo_surf)',
+    eventName: 'Player.Surf.FullPhysics',
+    properties: {
+      type: 'csgo_surf',
+      volume: 0.18,
+      pitch: 1.0,
+      mixgroup: 'Surf',
+      position_offset: [0.0, 0.0, 0.0],
+      reverb_wet: 1.0,
+      reverb_source_wet: 1.0,
+      use_distance_unfiltered_stereo_mapping_curve: true,
+      distance_unfiltered_stereo_mapping_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [300.0, 0.0, 0.0, 0.0, 2, 3]
+      ],
+      use_time_volume_mapping_curve: true,
+      time_volume_mapping_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [0.1, 0.43, 6.2, 6.2, 3, 1],
+        [0.16, 1.0, 0.0, 0.0, 1, 1]
+      ],
+      fadetime_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [0.5, 0.0, 0.0, 0.0, 1, 1]
+      ],
+      use_velocity_volume_curve: true,
+      velocity_volume_curve: [
+        [0.0, 0.0, 0.0, 0.0, 2, 3],
+        [700.0, 1.0, 0.0, 0.0, 1, 1]
+      ],
+      velocity_volume_seek_speed: 700.0,
+      use_velocity_eq: true,
+      use_volume_convar: true,
+      volume_convar: 'snd_surf_volume_slide',
+      distance_volume_mapping_curve: [
+        [0.0, 1.0, 0.0, 0.0, 2, 3],
+        [90.0, 1.0, -0.01, -0.01, 3, 1],
+        [1200.0, 0.0, 0.0, 0.0, 2, 3]
+      ],
+      vsnd_files_track_01: ['sounds/player/surf/surf_slide_loop.vsnd']
+    }
+  },
+
+  // === csgo_movie ===
+  csgo_movie_basic: {
+    id: 'csgo_movie_basic',
+    name_zh: '全景视频/电影音轨 (基础版 - csgo_movie)',
+    name_en: 'Panorama Movie Audio (Basic - csgo_movie)',
+    eventName: 'PanoramaMovie.Default',
+    properties: {
+      type: 'csgo_movie',
+      vsnd_files: 'sounds/ui/panorama_movie.vsnd'
+    }
+  },
+  csgo_movie_detailed: {
+    id: 'csgo_movie_detailed',
+    name_zh: '全景视频/电影音轨 (详细完整版 - csgo_movie)',
+    name_en: 'Panorama Movie Audio (Detailed - csgo_movie)',
+    eventName: 'PanoramaMovie.Cinematic',
+    properties: {
+      type: 'csgo_movie',
+      volume: 1.0,
       mixgroup: 'UI',
       is_ui_sound: true,
-      vsnd_files_track_01: ['sounds/ui/menu_click.vsnd'],
-      volume: 1.0,
-      pitch: 1.0
+      vsnd_files: 'sounds/ui/cinematic_intro.vsnd'
     }
   },
-  music_track: {
-    id: 'music_track',
-    name_zh: '音乐事件 (csgo_music)',
-    name_en: 'Music Track (csgo_music)',
-    eventName: 'Music.CustomTrack',
-    properties: {
-      type: 'csgo_music',
-      mixgroup: 'Music',
-      vsnd_files: 'sounds/music/custom_music_track.vsnd',
-      volume: 1.0,
-      loop_track: 'true',
-      should_queue_track: 'true',
-      stop_all_non_music: 'true'
-    }
-  },
-  ambient_retrigger: {
-    id: 'ambient_retrigger',
-    name_zh: '随机周期重触发音效',
-    name_en: 'Periodic Retrigger Ambient',
-    eventName: 'Ambient_Custom.RandomBirds',
-    properties: {
-      type: 'csgo_mega',
-      mixgroup: 'Ambient',
-      vsnd_files_track_01: ['sounds/ambient/creatures/bird_call_01.vsnd'],
-      volume: 0.8,
-      volume_random_min: -0.2,
-      volume_random_max: 0.2,
-      pitch_random_min: -0.1,
-      pitch_random_max: 0.1,
-      enable_retrigger: true,
-      retrigger_interval_min: 8.0,
-      retrigger_interval_max: 20.0,
-      retrigger_radius: 2000.0,
-      use_world_position: true,
-      position: [0.0, 0.0, 0.0]
-    }
-  },
+
+  // === Blank ===
   empty: {
     id: 'empty',
-    name_zh: '空白事件',
+    name_zh: '空白事件 (Blank)',
     name_en: 'Blank SoundEvent',
     eventName: 'SoundEvent_Blank.Default',
     properties: {
       type: 'csgo_mega',
       volume: 1.0,
-      vsnd_files_track_01: 'sounds/custom/new_sound.vsnd'
+      vsnd_files_track_01: ['sounds/custom/new_sound.vsnd']
     }
   }
 };
+
+// Aliases for backwards compatibility
+PRESETS.csgo_mega = PRESETS.csgo_mega_basic;
+PRESETS.generic_3d = PRESETS.csgo_mega_basic;
+PRESETS.csgo_music = PRESETS.csgo_music_basic;
+PRESETS.csgo_ambient = PRESETS.csgo_ambient_basic;
+PRESETS.csgo_surf = PRESETS.csgo_surf_basic;
+PRESETS.csgo_movie = PRESETS.csgo_movie_basic;
 
 export { CURVE_PRESETS, generateCurveFromEndpoints } from "./curve.js";

@@ -45,6 +45,40 @@ export function formatKv3Value(key, val, spec) {
     return `[ 0.0, 0.0, 0.0 ]`;
   }
 
+  if (kind === "vector2") {
+    if (Array.isArray(val)) {
+      const formatted = val.map(n => {
+        const num = Number(n) || 0;
+        let s = num.toString();
+        return s.includes(".") ? s : s + ".0";
+      });
+      return `[ ${formatted.join(", ")} ]`;
+    }
+    return `[ 0.8, 0.2 ]`;
+  }
+
+  if (kind === "array_string") {
+    if (Array.isArray(val)) {
+      const items = val.map(s => `\t\t\t"${String(s).replace(/"/g, '\\"')}",`);
+      if (items.length === 0) return "[ ]";
+      return `[\n${items.join("\n")}\n\t\t]`;
+    }
+    return `[ "${String(val)}" ]`;
+  }
+
+  if (kind === "array_float") {
+    if (Array.isArray(val)) {
+      const formatted = val.map(n => {
+        const num = Number(n) || 0;
+        let s = num.toString();
+        return s.includes(".") ? s : s + ".0";
+      });
+      if (formatted.length === 0) return "[ ]";
+      return `[ ${formatted.join(", ")} ]`;
+    }
+    return "[ ]";
+  }
+
   if (kind === "files" || key === "vsnd_files_track_01") {
     if (Array.isArray(val)) {
       const items = val.map(f => `\t\t\t"${normalizeVsndPath(f)}",`);
