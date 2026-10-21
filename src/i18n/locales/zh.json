@@ -40,7 +40,7 @@
     "ctrlSpaceHint": "Ctrl+Space: 代码补全建议 (Suggestions)",
     "usageScenario": "适用场景",
     "orFreeInput": "或自由输入...",
-    "resetSuccess": "已重置为默认 3D 空间预设 (基础版)",
+    "resetSuccess": "已重置为「{{preset}}」初始配置",
     "needAtLeastTwoPoints": "曲线必须保留至少 2 个控制点",
     "shareUrlFailed": "解析分享链接失败，已重置为默认配置",
     "basePlaceholder": "例如 Base.Event 或 Weapon_Base",

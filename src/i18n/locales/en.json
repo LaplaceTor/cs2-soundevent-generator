@@ -40,7 +40,7 @@
     "ctrlSpaceHint": "Ctrl+Space: Suggestions",
     "usageScenario": "Usage Scenario",
     "orFreeInput": "or free input...",
-    "resetSuccess": "Reset to default 3D spatial preset (Basic)",
+    "resetSuccess": "Reset to \"{{preset}}\" default configuration",
     "needAtLeastTwoPoints": "Curve must have at least 2 points",
     "shareUrlFailed": "Failed to parse share URL, fallback to default",
     "basePlaceholder": "e.g. Base.Event or Weapon_Base",

@@ -22,8 +22,7 @@ export const LeftConfigPanel: React.FC = () => {
   const enabledProperties = useSoundEventStore((s) => s.enabledProperties);
   const curType = useSoundEventStore((s) => s.propertyValues.type);
   const lang = useSoundEventStore((s) => s.lang);
-
-  const [selectedPresetId, setSelectedPresetId] = useState('csgo_mega_basic');
+  const selectedPresetId = useSoundEventStore((s) => s.selectedPresetId);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== 'undefined' ? window.innerHeight : 800
@@ -167,13 +166,14 @@ export const LeftConfigPanel: React.FC = () => {
   }, [isSimplified]);
 
   const handleReset = () => {
-    setSelectedPresetId('csgo_mega_basic');
-    applyPreset('csgo_mega_basic');
-    toast.info(t('ui.resetSuccess'));
+    const preset = PRESETS[selectedPresetId] || PRESETS.csgo_mega_basic;
+    const targetId = preset?.id || 'csgo_mega_basic';
+    applyPreset(targetId);
+    const presetName = t((preset?.nameKey || 'presets.csgo_mega_basic') as any);
+    toast.info(t('ui.resetSuccess', { preset: presetName }));
   };
 
   const handlePresetChange = (presetId: string) => {
-    setSelectedPresetId(presetId);
     applyPreset(presetId);
   };
 

@@ -24,6 +24,7 @@ export type SyncOrigin = 'controls' | 'editor' | 'init' | 'preset';
 
 interface SoundEventState {
   eventName: string;
+  selectedPresetId: string;
   enabledProperties: Set<string>;
   propertyValues: Record<string, any>;
   customProperties: Record<string, any>;
@@ -157,6 +158,7 @@ export const useSoundEventStore = create<SoundEventState>()(
   persist(
     (set, get) => ({
       eventName: 'Weapon_Custom.Single',
+      selectedPresetId: 'csgo_mega_basic',
       enabledProperties: new Set([
         'type',
         'volume',
@@ -385,6 +387,7 @@ export const useSoundEventStore = create<SoundEventState>()(
           produce((state: SoundEventState) => {
             const preset = PRESETS[presetId];
             if (!preset) return;
+            state.selectedPresetId = presetId;
             state.syncOrigin = 'preset';
             state.eventName = preset.eventName;
             state.enabledProperties.clear();
@@ -566,6 +569,7 @@ export const useSoundEventStore = create<SoundEventState>()(
           set(
             produce((state: SoundEventState) => {
               state.eventName = validated.n;
+              state.selectedPresetId = 'csgo_mega_basic';
               state.enabledProperties.clear();
               state.propertyValues = {};
               state.customProperties = {};
@@ -605,6 +609,7 @@ export const useSoundEventStore = create<SoundEventState>()(
       name: 'cs2_soundevent_generator_store_v2',
       partialize: (state) => ({
         eventName: state.eventName,
+        selectedPresetId: state.selectedPresetId,
         enabledProperties: Array.from(state.enabledProperties),
         propertyValues: state.propertyValues,
         customProperties: state.customProperties,
@@ -639,6 +644,10 @@ export const useSoundEventStore = create<SoundEventState>()(
         const safeEventName = rawEventName && !/[\r\n\x00-\x1f]/.test(rawEventName)
           ? rawEventName.slice(0, 128)
           : currentState.eventName;
+        const selectedPresetId =
+          typeof persistedState.selectedPresetId === 'string' && PRESETS[persistedState.selectedPresetId]
+            ? persistedState.selectedPresetId
+            : currentState.selectedPresetId;
         const lang = persistedState.lang || currentState.lang;
         const theme = persistedState.theme || currentState.theme;
         const includeComments = Boolean(persistedState.includeComments);
@@ -673,6 +682,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         return {
           ...currentState,
           eventName: safeEventName,
+          selectedPresetId,
           enabledProperties: enabled,
           propertyValues: values,
           customProperties: custom,
