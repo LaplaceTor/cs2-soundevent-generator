@@ -206,6 +206,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 0, e.target.value)}
                     onBlur={() => handleCellBlur(0)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} X`}
                   />
                 </td>
                 <td>
@@ -216,6 +217,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 1, e.target.value)}
                     onBlur={() => handleCellBlur(1)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} Y`}
                   />
                 </td>
                 <td>
@@ -226,6 +228,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 2, e.target.value)}
                     onBlur={() => handleCellBlur(2)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} Slope Left`}
                   />
                 </td>
                 <td>
@@ -236,6 +239,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 3, e.target.value)}
                     onBlur={() => handleCellBlur(3)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} Slope Right`}
                   />
                 </td>
                 <td>
@@ -248,6 +252,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 4, e.target.value)}
                     onBlur={() => handleCellBlur(4)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} Mode Left`}
                   />
                 </td>
                 <td>
@@ -260,6 +265,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onChange={(e) => handleCellChange(pIdx, 5, e.target.value)}
                     onBlur={() => handleCellBlur(5)}
                     className="curve-cell-input"
+                    aria-label={`Point ${pIdx + 1} Mode Right`}
                   />
                 </td>
                 <td className="p-0">

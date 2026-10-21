@@ -18,7 +18,7 @@ import {
   SoundEventSharePayloadSchema,
   Kv3PrimitiveOrArraySchema,
 } from '../domain/schema/validation';
-import i18n from '../i18n';
+import i18n, { loadLanguage } from '../i18n';
 
 export type SyncOrigin = 'controls' | 'editor' | 'init' | 'preset';
 
@@ -451,24 +451,32 @@ export const useSoundEventStore = create<SoundEventState>()(
           })
         ),
 
-      setLang: (lang) =>
+      setLang: (lang) => {
         set(
           produce((state: SoundEventState) => {
             state.lang = lang;
-            i18n.changeLanguage(lang);
             if (typeof document !== 'undefined') {
               document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
             }
-            state.syncOrigin = 'controls';
-            state.code = generateCode(
-              state.eventName,
-              state.enabledProperties,
-              state.propertyValues,
-              state.customProperties,
-              state.includeComments
-            );
           })
-        ),
+        );
+        loadLanguage(lang).then(() => {
+          set(
+            produce((state: SoundEventState) => {
+              if (state.lang === lang) {
+                state.syncOrigin = 'controls';
+                state.code = generateCode(
+                  state.eventName,
+                  state.enabledProperties,
+                  state.propertyValues,
+                  state.customProperties,
+                  state.includeComments
+                );
+              }
+            })
+          );
+        });
+      },
 
       setTheme: (theme) => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -638,7 +646,24 @@ export const useSoundEventStore = create<SoundEventState>()(
         normalizeDependencies(enabled, values);
         const code = generateCode(safeEventName, enabled, values, custom, includeComments);
 
-        i18n.changeLanguage(lang);
+        if (lang === 'en') {
+          loadLanguage('en').then(() => {
+            const state = useSoundEventStore.getState();
+            if (state.lang === 'en') {
+              useSoundEventStore.setState({
+                code: generateCode(
+                  state.eventName,
+                  state.enabledProperties,
+                  state.propertyValues,
+                  state.customProperties,
+                  state.includeComments
+                ),
+              });
+            }
+          });
+        } else {
+          i18n.changeLanguage('zh');
+        }
         if (typeof document !== 'undefined') {
           document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
           document.documentElement.classList.toggle('dark', theme === 'dark');

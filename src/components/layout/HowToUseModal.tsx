@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
@@ -12,9 +12,12 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
   const { t } = useTranslation();
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      prevFocusRef.current = document.activeElement as HTMLElement | null;
       setIsRendered(true);
       // Double rAF ensures DOM is mounted with initial closed styles before transitioning to open
       const frame1 = requestAnimationFrame(() => {
@@ -29,20 +32,76 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
       // Wait for exit transition to complete before unmounting from DOM
       const timer = setTimeout(() => {
         setIsRendered(false);
+        prevFocusRef.current?.focus?.();
       }, 200);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
+  // Focus trap and keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
+
+    const modalEl = modalRef.current;
+    if (!modalEl) return;
+
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    // Auto-focus first interactive element inside modal when opened
+    const timer = setTimeout(() => {
+      const focusableEls = modalEl.querySelectorAll<HTMLElement>(focusableSelector);
+      if (focusableEls.length > 0 && focusableEls[0]) {
+        focusableEls[0].focus();
+      } else {
+        modalEl.focus();
+      }
+    }, 50);
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusableEls = Array.from(
+          modalEl.querySelectorAll<HTMLElement>(focusableSelector)
+        ).filter(
+          (el) => el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0
+        );
+
+        if (focusableEls.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstEl = focusableEls[0];
+        const lastEl = focusableEls[focusableEls.length - 1];
+        if (!firstEl || !lastEl) {
+          e.preventDefault();
+          return;
+        }
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl || !modalEl.contains(document.activeElement)) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else {
+          if (document.activeElement === lastEl || !modalEl.contains(document.activeElement)) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isRendered) return null;
@@ -82,8 +141,10 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        tabIndex={-1}
         className={clsx(
-          "relative w-full max-w-2xl max-h-[88vh] bg-white dark:bg-[#0E131F] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out",
+          "relative w-full max-w-2xl max-h-[88vh] bg-white dark:bg-[#0E131F] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out outline-none",
           isVisible
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-2.5"

@@ -267,7 +267,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
       for (let i = 0; i < n - 1; i++) {
         const dx = pts[i + 1]![0]! - pts[i]![0]!;
         const dy = pts[i + 1]![1]! - pts[i]![1]!;
-        secants.push(dx !== 0 ? roundFloat(dy / dx, 2) : 0);
+        secants.push(dx !== 0 ? dy / dx : 0);
       }
 
       return pts.map((p, i) => {
@@ -298,8 +298,8 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
         const dy = endY - startY;
 
         if (dy < 0) {
-          const slopeMid1 = roundFloat((dy / spanX) * 1.25, 2);
-          const slopeMid2 = roundFloat((dy / spanX) * 0.35, 2);
+          const slopeMid1 = (dy / spanX) * 1.25;
+          const slopeMid2 = (dy / spanX) * 0.35;
           return [
             [roundFloat(x0, 2), roundFloat(startY, 2), 0.0, 0.0, 2, 3],
             [roundFloat(x0 + spanX * 0.16, 2), roundFloat(startY + dy * 0.2, 2), slopeMid1, slopeMid1, 3, 1],
@@ -307,7 +307,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
             [roundFloat(xEnd, 2), roundFloat(endY, 2), 0.0, 0.0, 1, 1],
           ];
         } else {
-          const slopeMid = roundFloat((dy / spanX) * 1.5, 2);
+          const slopeMid = (dy / spanX) * 1.5;
           return [
             [roundFloat(x0, 2), roundFloat(startY, 2), 0.0, 0.0, 2, 3],
             [roundFloat(x0 + spanX * 0.35, 2), roundFloat(startY + dy * 0.18, 2), slopeMid, slopeMid, 3, 1],
@@ -319,7 +319,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
 
       const tangents = computePchipTangents(pts);
       return pts.map((p, i) => {
-        const s = roundFloat(tangents[i]!, 2);
+        const s = tangents[i] ?? 0;
         let mLeft = 1;
         let mRight = 1;
         if (i === 0) {
@@ -350,7 +350,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
 
         const t = (p[0]! - x0) / spanX;
         const yVal = roundFloat(3 * t * t - 2 * t * t * t, 2);
-        const slope = roundFloat((6 * t * (1 - t)) / spanX, 2);
+        const slope = (6 * t * (1 - t)) / spanX;
         return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
       });
     }
@@ -365,11 +365,11 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
 
       return pts.map((p, i) => {
         if (i === 0) return [roundFloat(x0, 2), 1.0, 0.0, 0.0, 2, 3];
-        if (i === n - 1) return [roundFloat(xEnd), 0.0, 0.0, 0.0, 1, 1];
+        if (i === n - 1) return [roundFloat(xEnd, 2), 0.0, 0.0, 0.0, 1, 1];
 
         const t = (p[0]! - x0) / spanX;
         const yVal = roundFloat(1.0 - (3 * t * t - 2 * t * t * t), 2);
-        const slope = roundFloat((-6 * t * (1 - t)) / spanX, 2);
+        const slope = (-6 * t * (1 - t)) / spanX;
         return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
       });
     }
