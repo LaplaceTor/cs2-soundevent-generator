@@ -21,6 +21,7 @@ export const LeftConfigPanel: React.FC = () => {
   const collapseAllGroups = useSoundEventStore((s) => s.collapseAllGroups);
   const enabledProperties = useSoundEventStore((s) => s.enabledProperties);
   const curType = useSoundEventStore((s) => s.propertyValues.type);
+  const lang = useSoundEventStore((s) => s.lang);
 
   const [selectedPresetId, setSelectedPresetId] = useState('csgo_mega_basic');
   const [isScrolledDown, setIsScrolledDown] = useState(false);
@@ -31,6 +32,27 @@ export const LeftConfigPanel: React.FC = () => {
   const [fullHeaderHeight, setFullHeaderHeight] = useState(310);
   const isScrolledDownRef = useRef(isScrolledDown);
   isScrolledDownRef.current = isScrolledDown;
+
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const measureFullTabsRef = useRef<HTMLDivElement>(null);
+  const [isTabsCompact, setIsTabsCompact] = useState(false);
+
+  const checkTabsLayout = useCallback(() => {
+    if (!tabsContainerRef.current) return;
+    const containerWidth = tabsContainerRef.current.clientWidth;
+    const fullRequiredWidth = measureFullTabsRef.current?.offsetWidth || (lang === 'zh' ? 180 : 250);
+    setIsTabsCompact(containerWidth < fullRequiredWidth + 4);
+  }, [lang]);
+
+  useEffect(() => {
+    checkTabsLayout();
+    if (!tabsContainerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      checkTabsLayout();
+    });
+    ro.observe(tabsContainerRef.current);
+    return () => ro.disconnect();
+  }, [checkTabsLayout]);
 
   useEffect(() => {
     const onResize = () => {
@@ -356,32 +378,37 @@ export const LeftConfigPanel: React.FC = () => {
               className={clsx("transition-all duration-300", isSimplified ? "flex-1 min-w-0" : "w-full")}
             >
               {/* Filter Segmented Tabs */}
-              <div className="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-medium text-center">
+              <div
+                ref={tabsContainerRef}
+                className="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-medium text-center"
+              >
                 <button
                   type="button"
                   onClick={() => setFilterActiveOnly(false)}
                   className={clsx(
-                    "rounded-sm transition-all cursor-pointer",
+                    "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",
                     isSimplified ? "py-0.5" : "py-1",
                     !filterActiveOnly
                       ? "text-black dark:text-white font-semibold"
                       : "text-gray-500 hover:text-black dark:hover:text-white"
                   )}
+                  title={t('ui.filterAll')}
                 >
-                  {t('ui.filterAll')}
+                  {isTabsCompact ? t('ui.filterAllShort') : t('ui.filterAll')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterActiveOnly(true)}
                   className={clsx(
-                    "rounded-sm transition-all cursor-pointer truncate px-1",
+                    "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",
                     isSimplified ? "py-0.5" : "py-1",
                     filterActiveOnly
                       ? "text-black dark:text-white font-semibold"
                       : "text-gray-500 hover:text-black dark:hover:text-white"
                   )}
+                  title={t('ui.filterActiveOnly')}
                 >
-                  {t('ui.filterActiveOnly')}
+                  {isTabsCompact ? t('ui.filterActiveOnlyShort') : t('ui.filterActiveOnly')}
                 </button>
               </div>
             </div>
@@ -430,6 +457,16 @@ export const LeftConfigPanel: React.FC = () => {
             propKeys={g.propKeys}
           />
         ))}
+      </div>
+
+      {/* Off-screen measurement clone for filter tabs */}
+      <div
+        ref={measureFullTabsRef}
+        aria-hidden="true"
+        className="absolute left-[-9999px] top-[-9999px] invisible pointer-events-none flex items-center p-0.5 border text-[11px] font-medium whitespace-nowrap"
+      >
+        <span className="px-1">{t('ui.filterAll')}</span>
+        <span className="px-1">{t('ui.filterActiveOnly')}</span>
       </div>
     </section>
   );

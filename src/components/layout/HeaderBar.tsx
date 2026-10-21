@@ -27,9 +27,6 @@ export const HeaderBar: React.FC = () => {
           <span className="inline-block w-2 h-2 bg-black dark:bg-white rounded-none" />
           CS2 SOUNDEVENT
         </span>
-        <span className="text-[11px] font-mono px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 text-gray-500 rounded whitespace-nowrap">
-          KV3 SPEC
-        </span>
       </div>
 
       {/* Preferences: [EN/中文] [Theme] */}

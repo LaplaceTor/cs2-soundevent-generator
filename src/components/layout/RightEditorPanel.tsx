@@ -421,14 +421,14 @@ export const RightEditorPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Error Banner */}
+        {/* Error Banner - Wraps dynamically across multiple lines without truncation */}
         {hasError && (
-          <div className="px-4 py-1.5 bg-red-50 dark:bg-red-950/60 border-b border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-mono flex items-center justify-between flex-shrink-0 transition-all">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex-shrink-0">
-                !
-              </span>
-              <span className="truncate font-semibold">{getErrorMessage()}</span>
+          <div className="px-3.5 sm:px-4 py-2 bg-red-50 dark:bg-red-950/60 border-b border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-mono flex items-start gap-2 flex-shrink-0 transition-all">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex-shrink-0 mt-0.5">
+              !
+            </span>
+            <div className="flex-1 min-w-0 font-semibold break-words [overflow-wrap:anywhere] leading-relaxed">
+              {getErrorMessage()}
             </div>
           </div>
         )}
@@ -448,11 +448,7 @@ export const RightEditorPanel: React.FC = () => {
         </div>
 
         {/* Bottom Status Bar */}
-        <div className="h-6 px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <span>{t('ui.tabIndentHint')}</span>
-            <span>{t('ui.ctrlSpaceHint')}</span>
-          </div>
+        <div className="h-6 px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
           <div>{t('ui.cursorLnCol', { ln: cursorPos.line, col: cursorPos.col })}</div>
         </div>
       </section>
