@@ -171,9 +171,17 @@ export function useCurveCanvas({
         ctx.stroke();
 
         if (isActive || isHover) {
+          const formatCoord = (v: number) => {
+            const s = v.toString();
+            const parts = s.split('.');
+            if (parts.length === 2 && parts[1]!.length > 2) {
+              return s;
+            }
+            return v.toFixed(2);
+          };
           const span = maxX - minX;
-          const xDisplay = span <= 10 ? p.xValue.toFixed(2) : Math.round(p.xValue).toString();
-          const tipText = `(${xDisplay}, ${p.yValue.toFixed(2)})`;
+          const xDisplay = span <= 10 ? formatCoord(p.xValue) : Math.round(p.xValue).toString();
+          const tipText = `(${xDisplay}, ${formatCoord(p.yValue)})`;
           ctx.font = '10px Inter, sans-serif';
           const textW = ctx.measureText(tipText).width;
           const tipX = Math.max(padL, Math.min(width - padR - textW - 8, sx - textW / 2 - 4));
@@ -245,10 +253,8 @@ export function useCurveCanvas({
 
         const span = Math.max(0.1, (currentPts[lastIdx]?.[0] ?? 1) - (currentPts[0]?.[0] ?? 0));
 
-        if (span <= 1.5) {
+        if (span <= 10) {
           newX = Math.round(newX * 100) / 100;
-        } else if (span <= 10) {
-          newX = Math.round(newX * 20) / 20;
         } else if (span <= 50) {
           newX = Math.round(newX * 10) / 10;
         } else {
@@ -314,22 +320,8 @@ export function useCurveCanvas({
       const pos = getMousePos(e);
 
       const currentPts = pointsRef.current;
-      const lastIdx = currentPts.length - 1;
-      const span =
-        lastIdx >= 0
-          ? Math.max(0.1, (currentPts[lastIdx]?.[0] ?? 1) - (currentPts[0]?.[0] ?? 0))
-          : 1;
-
       const rawX = toDataX(pos.x);
-      let newX: number;
-      if (span <= 10) {
-        newX = Math.round(rawX * 100) / 100;
-      } else if (span <= 50) {
-        newX = Math.round(rawX * 10) / 10;
-      } else {
-        newX = Math.round(rawX);
-      }
-      newX = Math.max(0, newX);
+      let newX = Math.max(0, Math.round(rawX * 100) / 100);
 
       // Prevent adding a duplicate point if one already exists at this exact X
       if (currentPts.some((p) => Math.abs(p[0]! - newX) < 1e-4)) {
@@ -348,11 +340,43 @@ export function useCurveCanvas({
       }
     }
 
+    function onContextMenu(e: MouseEvent) {
+      e.preventDefault();
+      if (!transformersRef.current) return;
+      const { toScreenX, toScreenY } = transformersRef.current;
+      const pos = getMousePos(e);
+      let hit = -1;
+      let minDist = 20;
+
+      pointsRef.current.forEach((p, idx) => {
+        const sx = toScreenX(p[0]!);
+        const sy = toScreenY(p[1]!);
+        const dist = Math.hypot(sx - pos.x, sy - pos.y);
+        if (dist < minDist) {
+          minDist = dist;
+          hit = idx;
+        }
+      });
+
+      if (hit !== -1) {
+        if (pointsRef.current.length <= 2) {
+          return;
+        }
+        const updated = pointsRef.current.filter((_, i) => i !== hit);
+        pointsRef.current = updated;
+        draw();
+        if (onPointsChangeRef.current) {
+          onPointsChangeRef.current(updated);
+        }
+      }
+    }
+
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('dblclick', onDblClick);
+    canvas.addEventListener('contextmenu', onContextMenu);
 
     const ro = new ResizeObserver(() => draw());
     ro.observe(canvas.parentElement || canvas);
@@ -363,6 +387,7 @@ export function useCurveCanvas({
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('dblclick', onDblClick);
+      canvas.removeEventListener('contextmenu', onContextMenu);
       ro.disconnect();
     };
   }, []); // Stable listener attachment across entire canvas lifespan

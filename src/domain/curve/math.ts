@@ -189,7 +189,7 @@ export const CURVE_PRESETS: Record<string, number[][]> = {
   ],
 };
 
-function roundFloat(val: number, maxDecimals = 3): number {
+export function roundFloat(val: number, maxDecimals = 2): number {
   if (Number.isInteger(val)) return val;
   const factor = Math.pow(10, maxDecimals);
   return Math.round(val * factor) / factor;
@@ -267,7 +267,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
       for (let i = 0; i < n - 1; i++) {
         const dx = pts[i + 1]![0]! - pts[i]![0]!;
         const dy = pts[i + 1]![1]! - pts[i]![1]!;
-        secants.push(dx !== 0 ? Number((dy / dx).toFixed(6)) : 0);
+        secants.push(dx !== 0 ? roundFloat(dy / dx, 2) : 0);
       }
 
       return pts.map((p, i) => {
@@ -283,7 +283,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
           slopeLeft = secants[i - 1] ?? 0;
           slopeRight = secants[i] ?? 0;
         }
-        return [roundFloat(p[0]!), roundFloat(p[1]!), slopeLeft, slopeRight, 0, 0];
+        return [roundFloat(p[0]!, 2), roundFloat(p[1]!, 2), slopeLeft, slopeRight, 0, 0];
       });
     }
 
@@ -298,28 +298,28 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
         const dy = endY - startY;
 
         if (dy < 0) {
-          const slopeMid1 = Number(((dy / spanX) * 1.25).toFixed(6));
-          const slopeMid2 = Number(((dy / spanX) * 0.35).toFixed(6));
+          const slopeMid1 = roundFloat((dy / spanX) * 1.25, 2);
+          const slopeMid2 = roundFloat((dy / spanX) * 0.35, 2);
           return [
-            [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
-            [roundFloat(x0 + spanX * 0.16), roundFloat(startY + dy * 0.2), slopeMid1, slopeMid1, 3, 1],
-            [roundFloat(x0 + spanX * 0.6), roundFloat(startY + dy * 0.9), slopeMid2, slopeMid2, 3, 1],
-            [roundFloat(xEnd), roundFloat(endY), 0.0, 0.0, 1, 1],
+            [roundFloat(x0, 2), roundFloat(startY, 2), 0.0, 0.0, 2, 3],
+            [roundFloat(x0 + spanX * 0.16, 2), roundFloat(startY + dy * 0.2, 2), slopeMid1, slopeMid1, 3, 1],
+            [roundFloat(x0 + spanX * 0.6, 2), roundFloat(startY + dy * 0.9, 2), slopeMid2, slopeMid2, 3, 1],
+            [roundFloat(xEnd, 2), roundFloat(endY, 2), 0.0, 0.0, 1, 1],
           ];
         } else {
-          const slopeMid = Number(((dy / spanX) * 1.5).toFixed(6));
+          const slopeMid = roundFloat((dy / spanX) * 1.5, 2);
           return [
-            [roundFloat(x0), roundFloat(startY), 0.0, 0.0, 2, 3],
-            [roundFloat(x0 + spanX * 0.35), roundFloat(startY + dy * 0.18), slopeMid, slopeMid, 3, 1],
-            [roundFloat(x0 + spanX * 0.65), roundFloat(startY + dy * 0.82), slopeMid, slopeMid, 3, 1],
-            [roundFloat(xEnd), roundFloat(endY), 0.0, 0.0, 1, 1],
+            [roundFloat(x0, 2), roundFloat(startY, 2), 0.0, 0.0, 2, 3],
+            [roundFloat(x0 + spanX * 0.35, 2), roundFloat(startY + dy * 0.18, 2), slopeMid, slopeMid, 3, 1],
+            [roundFloat(x0 + spanX * 0.65, 2), roundFloat(startY + dy * 0.82, 2), slopeMid, slopeMid, 3, 1],
+            [roundFloat(xEnd, 2), roundFloat(endY, 2), 0.0, 0.0, 1, 1],
           ];
         }
       }
 
       const tangents = computePchipTangents(pts);
       return pts.map((p, i) => {
-        const s = roundFloat(tangents[i]!, 6);
+        const s = roundFloat(tangents[i]!, 2);
         let mLeft = 1;
         let mRight = 1;
         if (i === 0) {
@@ -332,45 +332,45 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
           mLeft = 3;
           mRight = 3;
         }
-        return [roundFloat(p[0]!), roundFloat(p[1]!), s, s, mLeft, mRight];
+        return [roundFloat(p[0]!, 2), roundFloat(p[1]!, 2), s, s, mLeft, mRight];
       });
     }
 
     case 'fade_in': {
       if (n === 2) {
         return [
-          [roundFloat(x0), 0.0, 0.0, 0.0, 2, 3],
-          [roundFloat(xEnd), 1.0, 0.0, 0.0, 1, 1],
+          [roundFloat(x0, 2), 0.0, 0.0, 0.0, 2, 3],
+          [roundFloat(xEnd, 2), 1.0, 0.0, 0.0, 1, 1],
         ];
       }
 
       return pts.map((p, i) => {
-        if (i === 0) return [roundFloat(x0), 0.0, 0.0, 0.0, 2, 3];
-        if (i === n - 1) return [roundFloat(xEnd), 1.0, 0.0, 0.0, 1, 1];
+        if (i === 0) return [roundFloat(x0, 2), 0.0, 0.0, 0.0, 2, 3];
+        if (i === n - 1) return [roundFloat(xEnd, 2), 1.0, 0.0, 0.0, 1, 1];
 
         const t = (p[0]! - x0) / spanX;
-        const yVal = roundFloat(3 * t * t - 2 * t * t * t);
-        const slope = Number(((6 * t * (1 - t)) / spanX).toFixed(6));
-        return [roundFloat(p[0]!), yVal, slope, slope, 1, 1];
+        const yVal = roundFloat(3 * t * t - 2 * t * t * t, 2);
+        const slope = roundFloat((6 * t * (1 - t)) / spanX, 2);
+        return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
       });
     }
 
     case 'fade_out': {
       if (n === 2) {
         return [
-          [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3],
-          [roundFloat(xEnd), 0.0, 0.0, 0.0, 1, 1],
+          [roundFloat(x0, 2), 1.0, 0.0, 0.0, 2, 3],
+          [roundFloat(xEnd, 2), 0.0, 0.0, 0.0, 1, 1],
         ];
       }
 
       return pts.map((p, i) => {
-        if (i === 0) return [roundFloat(x0), 1.0, 0.0, 0.0, 2, 3];
+        if (i === 0) return [roundFloat(x0, 2), 1.0, 0.0, 0.0, 2, 3];
         if (i === n - 1) return [roundFloat(xEnd), 0.0, 0.0, 0.0, 1, 1];
 
         const t = (p[0]! - x0) / spanX;
-        const yVal = roundFloat(1.0 - (3 * t * t - 2 * t * t * t));
-        const slope = Number(((-6 * t * (1 - t)) / spanX).toFixed(6));
-        return [roundFloat(p[0]!), yVal, slope, slope, 1, 1];
+        const yVal = roundFloat(1.0 - (3 * t * t - 2 * t * t * t), 2);
+        const slope = roundFloat((-6 * t * (1 - t)) / spanX, 2);
+        return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
       });
     }
 
@@ -378,7 +378,7 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
       return pts.map((p, i) => {
         const mLeft = i === 0 ? 2 : 1;
         const mRight = i === 0 ? 3 : 1;
-        return [roundFloat(p[0]!), 1.0, 0.0, 0.0, mLeft, mRight];
+        return [roundFloat(p[0]!, 2), 1.0, 0.0, 0.0, mLeft, mRight];
       });
     }
 

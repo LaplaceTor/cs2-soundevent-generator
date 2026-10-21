@@ -73,12 +73,12 @@
     "presetFlat": "Flat 1.0",
     "addPoint": "+ Add Control Point",
     "delPoint": "Delete",
-    "tableX": "X (Input)",
-    "tableY": "Y (Output)",
-    "tableSlopeLeft": "Slope Left",
-    "tableSlopeRight": "Slope Right",
-    "tableModeLeft": "Mode Left",
-    "tableModeRight": "Mode Right",
+    "tableX": "X",
+    "tableY": "Y",
+    "tableSlopeLeft": "Slope L",
+    "tableSlopeRight": "Slope R",
+    "tableModeLeft": "Mode L",
+    "tableModeRight": "Mode R",
     "tip": "Tip: Drag control points on canvas. Double-click empty canvas to add a point; right-click point to delete."
   },
   "groups": {

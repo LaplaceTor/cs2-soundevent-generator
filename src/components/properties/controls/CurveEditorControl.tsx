@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
-import { CURVE_PRESETS, generateCurveFromEndpoints } from '@/domain/curve/math';
+import { CURVE_PRESETS, generateCurveFromEndpoints, roundFloat } from '@/domain/curve/math';
 import { useCurveCanvas } from '@/domain/curve/useCurveCanvas';
 import { toast } from 'sonner';
 
@@ -62,16 +62,30 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
     onChange(updated);
   };
 
-  const handleCellChange = (pIdx: number, cIdx: number, val: number) => {
+  const handleCellChange = (pIdx: number, cIdx: number, val: string) => {
     const next = localPoints.map((row, i) => (i === pIdx ? [...row] : row));
     if (next[pIdx]) {
-      next[pIdx]![cIdx] = val;
-      if (cIdx === 0) {
-        next.sort((a, b) => a[0]! - b[0]!);
-      }
+      const parsed = parseFloat(val);
+      next[pIdx]![cIdx] = isNaN(parsed) ? (val as any) : parsed;
       setLocalPoints(next);
-      onChange(next);
+      if (!isNaN(parsed)) {
+        onChange(next);
+      }
     }
+  };
+
+  const handleCellBlur = (cIdx: number) => {
+    let next = localPoints.map((row) =>
+      row.map((cell) => {
+        const num = typeof cell === 'number' ? cell : parseFloat(String(cell));
+        return isNaN(num) ? 0 : num;
+      })
+    );
+    if (cIdx === 0) {
+      next = next.sort((a, b) => a[0]! - b[0]!);
+    }
+    setLocalPoints(next);
+    onChange(next);
   };
 
   const handleDeletePoint = (pIdx: number) => {
@@ -93,8 +107,9 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
     else if (span <= 10) step = 1.0;
     else if (span <= 100) step = 10.0;
 
-    const newX = span <= 10 ? Number((last[0]! + step).toFixed(2)) : Math.round(last[0]! + step);
-    const next = [...localPoints, [newX, Number(last[1]!.toFixed(2)), 0, 0, 2, 3]].sort(
+    const newX = roundFloat(last[0]! + step, 2);
+    const newY = roundFloat(last[1]!, 2);
+    const next = [...localPoints, [newX, newY, 0, 0, 2, 3]].sort(
       (a, b) => a[0]! - b[0]!
     );
     setLocalPoints(next);
@@ -167,17 +182,17 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="max-h-40 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
-        <table className="curve-table w-full min-w-[420px] table-fixed">
+      <div className="max-h-40 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded">
+        <table className="curve-table w-full table-fixed">
           <thead>
             <tr>
-              <th style={{ width: '18%' }}>{t('curveEditor.tableX')}</th>
-              <th style={{ width: '16%' }}>{t('curveEditor.tableY')}</th>
-              <th style={{ width: '17%' }}>{t('curveEditor.tableSlopeLeft')}</th>
-              <th style={{ width: '17%' }}>{t('curveEditor.tableSlopeRight')}</th>
-              <th style={{ width: '13%' }}>{t('curveEditor.tableModeLeft')}</th>
-              <th style={{ width: '13%' }}>{t('curveEditor.tableModeRight')}</th>
-              <th style={{ width: '6%' }}></th>
+              <th style={{ width: '16%' }} title={axisInfo.descX || 'X'}>{t('curveEditor.tableX')}</th>
+              <th style={{ width: '15%' }} title={axisInfo.descY || 'Y'}>{t('curveEditor.tableY')}</th>
+              <th style={{ width: '16%' }} title="Slope Left">{t('curveEditor.tableSlopeLeft')}</th>
+              <th style={{ width: '16%' }} title="Slope Right">{t('curveEditor.tableSlopeRight')}</th>
+              <th style={{ width: '14%' }} title="Mode Left">{t('curveEditor.tableModeLeft')}</th>
+              <th style={{ width: '14%' }} title="Mode Right">{t('curveEditor.tableModeRight')}</th>
+              <th style={{ width: '9%' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -186,36 +201,40 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                 <td>
                   <input
                     type="number"
-                    step="0.01"
+                    step="any"
                     value={pt[0]}
-                    onChange={(e) => handleCellChange(pIdx, 0, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 0, e.target.value)}
+                    onBlur={() => handleCellBlur(0)}
                     className="curve-cell-input"
                   />
                 </td>
                 <td>
                   <input
                     type="number"
-                    step="0.01"
+                    step="any"
                     value={pt[1]}
-                    onChange={(e) => handleCellChange(pIdx, 1, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 1, e.target.value)}
+                    onBlur={() => handleCellBlur(1)}
                     className="curve-cell-input"
                   />
                 </td>
                 <td>
                   <input
                     type="number"
-                    step="0.001"
+                    step="any"
                     value={pt[2]}
-                    onChange={(e) => handleCellChange(pIdx, 2, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 2, e.target.value)}
+                    onBlur={() => handleCellBlur(2)}
                     className="curve-cell-input"
                   />
                 </td>
                 <td>
                   <input
                     type="number"
-                    step="0.001"
+                    step="any"
                     value={pt[3]}
-                    onChange={(e) => handleCellChange(pIdx, 3, parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 3, e.target.value)}
+                    onBlur={() => handleCellBlur(3)}
                     className="curve-cell-input"
                   />
                 </td>
@@ -226,7 +245,8 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     min="0"
                     max="4"
                     value={pt[4]}
-                    onChange={(e) => handleCellChange(pIdx, 4, parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 4, e.target.value)}
+                    onBlur={() => handleCellBlur(4)}
                     className="curve-cell-input"
                   />
                 </td>
@@ -237,16 +257,18 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     min="0"
                     max="4"
                     value={pt[5]}
-                    onChange={(e) => handleCellChange(pIdx, 5, parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => handleCellChange(pIdx, 5, e.target.value)}
+                    onBlur={() => handleCellBlur(5)}
                     className="curve-cell-input"
                   />
                 </td>
-                <td>
+                <td className="p-0">
                   <button
                     type="button"
                     onClick={() => handleDeletePoint(pIdx)}
                     aria-label={`Delete point ${pIdx + 1}`}
-                    className="w-6 h-6 inline-flex items-center justify-center text-gray-400 hover:text-red-500 font-bold cursor-pointer rounded transition-colors active:scale-95"
+                    title={t('curveEditor.delPoint')}
+                    className="w-5 h-5 mx-auto flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold cursor-pointer rounded transition-colors active:scale-95 text-xs"
                   >
                     ✕
                   </button>

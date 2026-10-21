@@ -264,12 +264,15 @@ html.dark select option,
 }
 
 .curve-table th {
-  padding: 3px 2px;
+  padding: 3px 1px;
   text-align: center;
   font-weight: 500;
   color: #6B7280;
   border-bottom: 1px solid #E5E7EB;
   white-space: nowrap;
+  font-size: 9.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dark .curve-table th {
@@ -278,7 +281,7 @@ html.dark select option,
 }
 
 .curve-table td {
-  padding: 2px 1px;
+  padding: 1.5px 0.5px;
   border-bottom: 1px solid #F3F4F6;
   text-align: center;
 }
@@ -287,26 +290,44 @@ html.dark select option,
   border-bottom-color: #1F2937;
 }
 
+.curve-table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark .curve-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.curve-cell-input::-webkit-outer-spin-button,
+.curve-cell-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .curve-cell-input {
   width: 100%;
   min-width: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 2px;
-  padding: 1px 2px;
+  padding: 1px 0;
   color: inherit;
   font-family: inherit;
   font-size: 10px;
   text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .curve-cell-input:focus {
   border-color: #111827;
   outline: none;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .dark .curve-cell-input:focus {
   border-color: #F9FAFB;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .badge-valid {
