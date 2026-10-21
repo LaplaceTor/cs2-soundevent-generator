@@ -74,8 +74,12 @@ async function build() {
   // Read index.html template and inject
   let html = fs.readFileSync('index.html', 'utf8');
   html = html.replace(
+    '</head>',
+    `  <link rel="stylesheet" href="./${cssFile}" />\n  </head>`
+  );
+  html = html.replace(
     '<script type="module" src="/src/main.tsx"></script>',
-    `<link rel="stylesheet" href="./${cssFile}" />\n    <script type="module" src="./${jsFile}"></script>`
+    `<script type="module" src="./${jsFile}"></script>`
   );
   fs.writeFileSync(path.join(distDir, 'index.html'), html, 'utf8');
 

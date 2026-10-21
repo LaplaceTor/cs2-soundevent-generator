@@ -20,6 +20,7 @@ export const TypeSelectControl: React.FC<TypeSelectControlProps> = ({
     <div className="w-full space-y-2">
       <select
         value={curType}
+        aria-label={t('labels.type')}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer font-medium"
       >

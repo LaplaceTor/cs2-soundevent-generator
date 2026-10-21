@@ -9,6 +9,7 @@ interface FloatSliderControlProps {
 }
 
 export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
+  propKey,
   spec,
   value,
   onChange,
@@ -38,6 +39,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
         max={maxVal}
         step={step}
         value={curNum}
+        aria-label={`${propKey} slider`}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
       />
       <input
@@ -46,6 +48,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
         value={curNum}
         step={step}
         min={onlyPositive ? '0' : undefined}
+        aria-label={`${propKey} value`}
         onChange={(e) => {
           let num = parseFloat(e.target.value);
           if (isNaN(num)) return;

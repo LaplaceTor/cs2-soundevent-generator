@@ -43,6 +43,7 @@ export const BoolToggleControl: React.FC<BoolToggleControlProps> = ({
         <button
           type="button"
           onClick={handleSetTrue}
+          aria-pressed={isTrue}
           className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
             isTrue
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
@@ -54,6 +55,7 @@ export const BoolToggleControl: React.FC<BoolToggleControlProps> = ({
         <button
           type="button"
           onClick={handleSetFalse}
+          aria-pressed={!isTrue}
           className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
             !isTrue
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'

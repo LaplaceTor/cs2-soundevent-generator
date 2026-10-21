@@ -214,7 +214,10 @@ export const LeftConfigPanel: React.FC = () => {
   };
 
   return (
-    <section className="w-full lg:w-[380px] lg:flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full bg-white dark:bg-[#0B0F17] overflow-hidden">
+    <section
+      aria-label={t('ui.configuration')}
+      className="w-full lg:w-[380px] lg:flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full bg-white dark:bg-[#0B0F17] overflow-hidden"
+    >
       {/* Top Header Section with smooth morphing transition */}
       <div
         ref={fullHeaderRef}
@@ -233,9 +236,9 @@ export const LeftConfigPanel: React.FC = () => {
           )}
         >
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 m-0">
               {t('ui.configuration')}
-            </span>
+            </h2>
             <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
               {t('ui.configSub')}
             </span>
@@ -258,7 +261,10 @@ export const LeftConfigPanel: React.FC = () => {
                 isSimplified ? "hidden" : "max-h-6 opacity-100 mb-1"
               )}
             >
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <label
+                htmlFor="presetSelect"
+                className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 cursor-pointer"
+              >
                 {t('ui.presetLabel')}
               </label>
               <span className="text-[10px] font-mono text-gray-400">PRESET</span>
@@ -272,6 +278,7 @@ export const LeftConfigPanel: React.FC = () => {
               )}
             >
               <select
+                id="presetSelect"
                 ref={registerFlip('presetSelect')}
                 value={selectedPresetId}
                 onChange={(e) => handlePresetChange(e.target.value)}
@@ -280,6 +287,7 @@ export const LeftConfigPanel: React.FC = () => {
                   isSimplified ? "flex-1 px-2 py-1" : "flex-1 px-2.5 py-1.5"
                 )}
                 title={t('ui.presetLabel')}
+                aria-label={t('ui.presetLabel')}
               >
                 {Object.values(PRESETS).map((p) => (
                   <option key={p.id} value={p.id}>
@@ -317,7 +325,10 @@ export const LeftConfigPanel: React.FC = () => {
                   isSimplified ? "hidden" : "max-h-6 opacity-100 mt-2.5 mb-1"
                 )}
               >
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <label
+                  htmlFor="eventNameInput"
+                  className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 cursor-pointer"
+                >
                   {t('ui.eventIdentifier')}
                 </label>
                 <span className="text-[10px] font-mono text-gray-400">KV3</span>
@@ -325,6 +336,7 @@ export const LeftConfigPanel: React.FC = () => {
 
               {/* Event Name Input (glides between Line 2 in relaxed and Line 1 in compact) */}
               <input
+                id="eventNameInput"
                 ref={registerFlip('eventNameInput')}
                 type="text"
                 value={eventName}
@@ -335,6 +347,7 @@ export const LeftConfigPanel: React.FC = () => {
                 )}
                 placeholder={t('ui.eventNamePlaceholder')}
                 title={t('ui.eventNameLabel')}
+                aria-label={t('ui.eventNameLabel')}
               />
             </div>
           </div>
@@ -348,12 +361,16 @@ export const LeftConfigPanel: React.FC = () => {
                 isSimplified ? "hidden" : "max-h-6 opacity-100 mb-1"
               )}
             >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <label
+                htmlFor="searchInput"
+                className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 cursor-pointer"
+              >
                 {t('ui.filterSearch')}
-              </span>
+              </label>
             </div>
 
             <input
+              id="searchInput"
               ref={registerFlip('searchInput')}
               type="text"
               value={searchQuery}
@@ -363,6 +380,7 @@ export const LeftConfigPanel: React.FC = () => {
                 isSimplified ? "px-2.5 py-1" : "px-2.5 py-1.5"
               )}
               placeholder={t('ui.searchPlaceholder')}
+              aria-label={t('ui.filterSearch')}
             />
           </div>
 
@@ -380,10 +398,14 @@ export const LeftConfigPanel: React.FC = () => {
               {/* Filter Segmented Tabs */}
               <div
                 ref={tabsContainerRef}
+                role="tablist"
+                aria-label={t('ui.filterSearch')}
                 className="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-medium text-center"
               >
                 <button
                   type="button"
+                  role="tab"
+                  aria-selected={!filterActiveOnly}
                   onClick={() => setFilterActiveOnly(false)}
                   className={clsx(
                     "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",
@@ -398,6 +420,8 @@ export const LeftConfigPanel: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  role="tab"
+                  aria-selected={filterActiveOnly}
                   onClick={() => setFilterActiveOnly(true)}
                   className={clsx(
                     "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",

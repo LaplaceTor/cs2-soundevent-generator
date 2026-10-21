@@ -72,6 +72,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="how-to-use-modal-title"
       className={clsx(
         "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm transition-all duration-200 ease-out",
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -90,10 +93,10 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         {/* Modal Header */}
         <div className="px-5 py-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/50 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-base">💡</span>
-            <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
+            <span className="text-base" aria-hidden="true">💡</span>
+            <h2 id="how-to-use-modal-title" className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide m-0">
               {t('guideModal.title')}
-            </h3>
+            </h2>
           </div>
           <button
             type="button"
@@ -109,18 +112,18 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 sm:space-y-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans min-w-0 break-words [overflow-wrap:anywhere]">
           {/* Section 1: Core Concept */}
           <div className="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
-            <h4 className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
-              <span>🎯</span> {concept.title}
-            </h4>
+            <h3 className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5 m-0">
+              <span aria-hidden="true">🎯</span> {concept.title}
+            </h3>
             <p className="text-gray-700 dark:text-gray-300">{concept.p1}</p>
             <p className="text-gray-700 dark:text-gray-300">{concept.p2}</p>
           </div>
 
           {/* Section 2: Entity Selection */}
           <div className="space-y-2.5 min-w-0">
-            <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5">
-              <span>🔊</span> {t('guideModal.entitiesTitle')}
-            </h4>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5 m-0">
+              <span aria-hidden="true">🔊</span> {t('guideModal.entitiesTitle')}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {Array.isArray(entities) &&
                 entities.map((ent, idx) => (
@@ -154,9 +157,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
 
           {/* Section 3: 4-Step Practical Implementation */}
           <div className="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
-            <h4 className="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5">
-              <span>🚀</span> {t('guideModal.stepsTitle')}
-            </h4>
+            <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5 m-0">
+              <span aria-hidden="true">🚀</span> {t('guideModal.stepsTitle')}
+            </h3>
             <ol className="list-decimal list-inside space-y-1.5 text-gray-700 dark:text-gray-300 text-[11px] break-words [overflow-wrap:anywhere]">
               {Array.isArray(steps) &&
                 steps.map((st, sIdx) => (

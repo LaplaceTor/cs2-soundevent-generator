@@ -82,6 +82,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
                       step="0.05"
                       min="0"
                       value={w}
+                      aria-label={`${t('weightsEditor.weight')} #${idx + 1}`}
                       onChange={(e) => handleWeightChange(idx, parseFloat(e.target.value) || 0)}
                       className="curve-cell-input font-mono"
                     />

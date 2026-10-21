@@ -23,10 +23,10 @@ export const HeaderBar: React.FC = () => {
     <header className="min-h-14 py-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between flex-shrink-0">
       {/* Title */}
       <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-        <span className="text-xs font-bold uppercase tracking-widest text-black dark:text-white flex items-center gap-2 whitespace-nowrap">
-          <span className="inline-block w-2 h-2 bg-black dark:bg-white rounded-none" />
+        <h1 className="text-xs font-bold uppercase tracking-widest text-black dark:text-white flex items-center gap-2 whitespace-nowrap m-0 font-sans">
+          <span className="inline-block w-2 h-2 bg-black dark:bg-white rounded-none" aria-hidden="true" />
           CS2 SOUNDEVENT
-        </span>
+        </h1>
       </div>
 
       {/* Preferences: [EN/中文] [Theme] */}
@@ -37,6 +37,7 @@ export const HeaderBar: React.FC = () => {
           onClick={handleLangToggle}
           className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer"
           title={t('ui.langToggle')}
+          aria-label={t('ui.langToggle')}
         >
           {lang === 'zh' ? 'EN' : '中文'}
         </button>
@@ -47,6 +48,7 @@ export const HeaderBar: React.FC = () => {
           onClick={handleThemeToggle}
           className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer"
           title={t('ui.themeToggle')}
+          aria-label={t('ui.themeToggle')}
         >
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>

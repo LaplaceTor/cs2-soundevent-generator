@@ -453,6 +453,9 @@ export const useSoundEventStore = create<SoundEventState>()(
           produce((state: SoundEventState) => {
             state.lang = lang;
             i18n.changeLanguage(lang);
+            if (typeof document !== 'undefined') {
+              document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            }
             state.syncOrigin = 'controls';
             state.code = generateCode(
               state.eventName,
@@ -609,8 +612,11 @@ export const useSoundEventStore = create<SoundEventState>()(
         const code = generateCode(eventName, enabled, values, custom, includeComments);
 
         i18n.changeLanguage(lang);
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.style.colorScheme = theme;
+        if (typeof document !== 'undefined') {
+          document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          document.documentElement.style.colorScheme = theme;
+        }
 
         return {
           ...currentState,

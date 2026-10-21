@@ -245,6 +245,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                   <button
                     type="button"
                     onClick={() => handleDeletePoint(pIdx)}
+                    aria-label={`Delete point ${pIdx + 1}`}
                     className="px-1 text-gray-400 hover:text-red-500 font-bold cursor-pointer"
                   >
                     ✕

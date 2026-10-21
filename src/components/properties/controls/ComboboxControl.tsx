@@ -29,6 +29,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
     return (
       <select
         value={value || (options[0] ?? '')}
+        aria-label={propKey}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer font-medium"
       >
@@ -50,6 +51,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
     <div className="flex gap-2">
       <select
         value={value || ''}
+        aria-label={`${propKey} select`}
         onChange={(e) => onChange(e.target.value)}
         className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer"
       >
@@ -62,6 +64,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
       <input
         type="text"
         value={value || ''}
+        aria-label={`${propKey} custom input`}
         placeholder={t('ui.orFreeInput')}
         onChange={(e) => onChange(e.target.value)}
         className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400"

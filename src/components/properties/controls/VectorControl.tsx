@@ -32,6 +32,7 @@ export const VectorControl: React.FC<VectorControlProps> = ({
             type="number"
             step={dim === 3 ? '1' : '0.05'}
             value={vec[idx] ?? 0}
+            aria-label={axis}
             onChange={(e) => handleChange(idx, parseFloat(e.target.value) || 0)}
             className="w-full font-mono text-xs bg-transparent outline-none text-right"
           />

@@ -173,6 +173,7 @@ export const RightEditorPanel: React.FC = () => {
     <>
       {/* Mobile Backdrop */}
       <div
+        aria-hidden="true"
         className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-200 lg:hidden touch-none ${
           isDrawerOpen ? 'block' : 'hidden'
         }`}
@@ -184,11 +185,13 @@ export const RightEditorPanel: React.FC = () => {
       <button
         type="button"
         onClick={() => setDrawerOpen(true)}
+        aria-label={t('ui.viewCodeBtn')}
         className="lg:hidden fixed bottom-5 right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer"
       >
-        <span>📄</span>
+        <span aria-hidden="true">📄</span>
         <span>{t('ui.viewCodeBtn')}</span>
         <span
+          aria-hidden="true"
           className={`w-2 h-2 rounded-full ${
             hasError ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'
           }`}
@@ -198,6 +201,7 @@ export const RightEditorPanel: React.FC = () => {
       {/* Main Right Section (Flex-1 on wide, Slide Drawer on narrow) */}
       <section
         id="rightEditorSection"
+        aria-label={t('ui.editorTitle')}
         className={`
           fixed inset-x-0 bottom-0 z-50 h-[84vh] rounded-t-2xl border-t border-gray-300 dark:border-gray-700 shadow-2xl transform transition-transform duration-300 ease-out
           lg:static lg:inset-auto lg:bottom-auto lg:z-auto lg:h-full lg:rounded-none lg:border-t-0 lg:shadow-none lg:transform-none lg:transition-none
@@ -216,13 +220,13 @@ export const RightEditorPanel: React.FC = () => {
         >
           {/* Zone 1: Title & Status Badge */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
-            <span
+            <h2
               className={`${
                 isTitleHidden ? 'hidden' : 'inline'
-              } text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap`}
+              } text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap m-0`}
             >
               {t('ui.editorTitle')}
-            </span>
+            </h2>
 
             {/* Validation Badge */}
             <div
@@ -249,10 +253,12 @@ export const RightEditorPanel: React.FC = () => {
           <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0 flex-nowrap">
             {/* Include Comments Checkbox - Text is NEVER omitted */}
             <label
+              htmlFor="include-comments-checkbox"
               className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-black dark:hover:text-white cursor-pointer select-none whitespace-nowrap flex-shrink-0 transition-colors"
               title={t('ui.includeCommentsTooltip')}
             >
               <input
+                id="include-comments-checkbox"
                 type="checkbox"
                 checked={includeComments}
                 onChange={(e) => setIncludeComments(e.target.checked)}

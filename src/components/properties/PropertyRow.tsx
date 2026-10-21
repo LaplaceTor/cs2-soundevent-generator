@@ -172,16 +172,21 @@ export const PropertyRow: React.FC<PropertyRowProps> = ({ propKey }) => {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
           <input
+            id={`prop-toggle-${propKey}`}
             type="checkbox"
             checked={isEnabled}
             onChange={(e) => handleToggle(e.target.checked)}
             className="custom-checkbox mt-0.5"
+            aria-label={`${label} (${propKey})`}
           />
           <div className="flex-1 min-w-0 leading-tight">
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+              <label
+                htmlFor={`prop-toggle-${propKey}`}
+                className="text-xs font-medium text-gray-900 dark:text-gray-100 cursor-pointer select-none"
+              >
                 {label}
-              </span>
+              </label>
               <span className="text-[11px] font-mono text-gray-400 select-all">
                 {propKey}
               </span>
