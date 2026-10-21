@@ -504,7 +504,7 @@
     "ioLabel": "I/O:",
     "concept": {
       "title": "Core Concept: Relationship Between SoundEvents and Map Entities",
-      "p1": "SoundEvent (.vsndevts) is the sound's \"configuration template and algorithmic core\", defining volume, 3D distance falloff curves, spatial reverb, and geometric occlusion.",
+      "p1": "SoundEvent (in .vsndevts files) is the sound's \"configuration template and algorithmic core\", defining volume, 3D distance falloff curves, spatial reverb, and geometric occlusion.",
       "p2": "Entities are the map's \"3D sound origin and playback controllers\", responsible for providing world coordinates, responding to trigger logic (I/O), and tracking model movement."
     },
     "entitiesTitle": "Entity Selection Guide",

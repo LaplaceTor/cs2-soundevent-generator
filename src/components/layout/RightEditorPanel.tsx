@@ -24,36 +24,65 @@ export const RightEditorPanel: React.FC = () => {
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
 
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const titleGroupRef = useRef<HTMLDivElement>(null);
-  const measureActionsRef = useRef<HTMLDivElement>(null);
+  const measureFullActionsRef = useRef<HTMLDivElement>(null);
+  const measureCompactActionsRef = useRef<HTMLDivElement>(null);
+  const measureTitleRef = useRef<HTMLDivElement>(null);
+  const measureFullBadgeRef = useRef<HTMLDivElement>(null);
+
   const [isCompact, setIsCompact] = useState(false);
-  const [isUltraCompact, setIsUltraCompact] = useState(false);
+  const [isTitleHidden, setIsTitleHidden] = useState(false);
+  const [isBadgeCompact, setIsBadgeCompact] = useState(false);
 
   const hasError = diagnostics.length > 0;
   const firstError = diagnostics[0];
 
-  // Accurately check remaining width by measuring actual toolbar width minus Title & "格式正确" badge minus paddings & gaps
+  // Accurately check remaining width by measuring actual toolbar width against measured clones
   const checkLayout = useCallback(() => {
-    if (!toolbarRef.current || !titleGroupRef.current) return;
+    if (!toolbarRef.current) return;
     const toolbar = toolbarRef.current;
-    const titleGroup = titleGroupRef.current;
 
     const style = window.getComputedStyle(toolbar);
     const paddingLeft = parseFloat(style.paddingLeft) || 16;
     const paddingRight = parseFloat(style.paddingRight) || 16;
     const gap = parseFloat(style.gap) || 8;
 
-    // Available width strictly inside the toolbar, respecting paddingRight (distance to floating window edge)
-    const maxAllowedActionsWidth = toolbar.clientWidth - paddingLeft - paddingRight - titleGroup.offsetWidth - gap;
+    const availableWidth = toolbar.clientWidth - paddingLeft - paddingRight;
 
-    // Real required full-text width directly measured from the hidden full-text clone
-    const requiredFullWidth = measureActionsRef.current
-      ? measureActionsRef.current.offsetWidth
-      : (lang === 'zh' ? 455 : 510);
+    const fullActionsWidth = measureFullActionsRef.current?.offsetWidth || (lang === 'zh' ? 455 : 510);
+    const compactActionsWidth = measureCompactActionsRef.current?.offsetWidth || (lang === 'zh' ? 245 : 275);
+    const titleWidth = measureTitleRef.current?.offsetWidth || (lang === 'zh' ? 80 : 100);
+    const fullBadgeWidth = measureFullBadgeRef.current?.offsetWidth || (lang === 'zh' ? 75 : 85);
 
-    setIsCompact(requiredFullWidth > maxAllowedActionsWidth);
-    setIsUltraCompact(maxAllowedActionsWidth < (lang === 'zh' ? 255 : 270));
-  }, [lang]);
+    // Level 1: Can we fit full actions + title + full badge?
+    const fullTotalRequired = titleWidth + gap + fullBadgeWidth + gap + fullActionsWidth;
+    if (availableWidth >= fullTotalRequired) {
+      setIsCompact(false);
+      setIsTitleHidden(false);
+      setIsBadgeCompact(false);
+      return;
+    }
+
+    // Full actions cannot fit -> action buttons become compact (icons only)
+    // Note: comments checkbox text is ALWAYS preserved in compactActionsWidth!
+    setIsCompact(true);
+
+    // Remaining width for the left zone
+    const remainingForLeft = availableWidth - compactActionsWidth - gap;
+
+    // Level 2: Can left zone fit Title + Full Badge?
+    if (remainingForLeft >= titleWidth + gap + fullBadgeWidth) {
+      setIsTitleHidden(false);
+      setIsBadgeCompact(false);
+    } else if (remainingForLeft >= fullBadgeWidth) {
+      // Level 3: Title cannot fit, but Full Badge ("格式正确") CAN fit
+      setIsTitleHidden(true);
+      setIsBadgeCompact(false);
+    } else {
+      // Level 4: Width is really insufficient -> Title hidden, Badge collapses to dot only (绿点/红点)!
+      setIsTitleHidden(true);
+      setIsBadgeCompact(true);
+    }
+  }, [lang, hasError]);
 
   useEffect(() => {
     checkLayout();
@@ -62,14 +91,8 @@ export const RightEditorPanel: React.FC = () => {
       checkLayout();
     });
     ro.observe(toolbarRef.current);
-    if (titleGroupRef.current) {
-      ro.observe(titleGroupRef.current);
-    }
-    if (measureActionsRef.current) {
-      ro.observe(measureActionsRef.current);
-    }
     return () => ro.disconnect();
-  }, [checkLayout, diagnostics.length, lang]);
+  }, [checkLayout]);
 
   const handleShare = async () => {
     const hash = exportShareHash();
@@ -191,33 +214,40 @@ export const RightEditorPanel: React.FC = () => {
           ref={toolbarRef}
           className="editor-responsive-bar min-h-11 px-3 sm:px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between gap-2 flex-nowrap flex-shrink-0"
         >
-          {/* Zone 1: Title & Status Badge (measured to accurately calculate remaining space) */}
-          <div
-            ref={titleGroupRef}
-            className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0"
-          >
-            <span className="hidden min-[420px]:inline text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          {/* Zone 1: Title & Status Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
+            <span
+              className={`${
+                isTitleHidden ? 'hidden' : 'inline'
+              } text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap`}
+            >
               {t('ui.editorTitle')}
             </span>
 
             {/* Validation Badge */}
             <div
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium border transition-colors whitespace-nowrap flex-shrink-0 ${
+              className={`inline-flex items-center justify-center rounded text-[11px] font-mono font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
+                isBadgeCompact ? 'w-6 h-6 p-0' : 'gap-1.5 px-2 py-0.5'
+              } ${
                 hasError ? 'badge-error' : 'badge-valid'
               }`}
+              title={hasError ? t('ui.statusInvalid') : t('ui.statusValid')}
+              aria-label={hasError ? t('ui.statusInvalid') : t('ui.statusValid')}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                   hasError ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'
                 }`}
               />
-              <span>{hasError ? t('ui.statusInvalid') : t('ui.statusValid')}</span>
+              {!isBadgeCompact && (
+                <span>{hasError ? t('ui.statusInvalid') : t('ui.statusValid')}</span>
+              )}
             </div>
           </div>
 
           {/* Zone 2: Editor Actions & Mobile Close on the same line */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0 flex-nowrap">
-            {/* Include Comments Checkbox */}
+            {/* Include Comments Checkbox - Text is NEVER omitted */}
             <label
               className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-black dark:hover:text-white cursor-pointer select-none whitespace-nowrap flex-shrink-0 transition-colors"
               title={t('ui.includeCommentsTooltip')}
@@ -228,7 +258,7 @@ export const RightEditorPanel: React.FC = () => {
                 onChange={(e) => setIncludeComments(e.target.checked)}
                 className="custom-checkbox"
               />
-              <span className={isUltraCompact ? 'hidden' : 'inline'}>{t('ui.includeComments')}</span>
+              <span>{t('ui.includeComments')}</span>
             </label>
 
             <span className="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
@@ -300,40 +330,94 @@ export const RightEditorPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Off-screen measurement clone: renders full-text version of actions to measure exact required width */}
+        {/* Off-screen measurement clone: renders full & compact versions to measure exact required widths */}
         <div
-          ref={measureActionsRef}
           aria-hidden="true"
-          className="absolute left-[-9999px] top-[-9999px] invisible pointer-events-none flex items-center gap-1.5 sm:gap-2.5 flex-nowrap whitespace-nowrap"
+          className="absolute left-[-9999px] top-[-9999px] invisible pointer-events-none flex items-center gap-4 whitespace-nowrap"
         >
-          <div className="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-            <span className="custom-checkbox" />
-            <span>{t('ui.includeComments')}</span>
+          {/* Full Actions Clone */}
+          <div
+            ref={measureFullActionsRef}
+            className="flex items-center gap-1.5 sm:gap-2.5 flex-nowrap whitespace-nowrap"
+          >
+            <div className="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap">
+              <span className="custom-checkbox" />
+              <span>{t('ui.includeComments')}</span>
+            </div>
+
+            <span className="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+
+            <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 flex-shrink-0">
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
+                <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{t('ui.shareBtn')}</span>
+              </div>
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{t('ui.howToUseBtn')}</span>
+              </div>
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{t('ui.formatBtn')}</span>
+              </div>
+              <div className="py-1 px-2 sm:px-2.5 rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
+                <Copy className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{t('ui.copyCodeBtn')}</span>
+              </div>
+            </div>
+
+            <div className="lg:hidden flex items-center justify-end flex-shrink-0 pl-1.5 sm:pl-2.5 border-l border-transparent">
+              <div className="w-7 h-7 sm:w-8 sm:h-8" />
+            </div>
           </div>
 
-          <span className="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+          {/* Compact Actions Clone (Buttons icon-only, Comments text always included) */}
+          <div
+            ref={measureCompactActionsRef}
+            className="flex items-center gap-1.5 sm:gap-2.5 flex-nowrap whitespace-nowrap"
+          >
+            <div className="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap">
+              <span className="custom-checkbox" />
+              <span>{t('ui.includeComments')}</span>
+            </div>
 
-          <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 flex-shrink-0">
-            <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
-              <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{t('ui.shareBtn')}</span>
+            <span className="inline-block w-px h-3.5 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+
+            <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 flex-shrink-0">
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center">
+                <Share2 className="w-3.5 h-3.5 flex-shrink-0" />
+              </div>
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center">
+                <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" />
+              </div>
+              <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 flex-shrink-0" />
+              </div>
+              <div className="py-1 px-2 sm:px-2.5 rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center">
+                <Copy className="w-3.5 h-3.5 flex-shrink-0" />
+              </div>
             </div>
-            <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
-              <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{t('ui.howToUseBtn')}</span>
-            </div>
-            <div className="py-1 px-2 border border-transparent rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{t('ui.formatBtn')}</span>
-            </div>
-            <div className="py-1 px-2 sm:px-2.5 rounded text-[11px] font-medium whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center gap-1.5">
-              <Copy className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{t('ui.copyCodeBtn')}</span>
+
+            <div className="lg:hidden flex items-center justify-end flex-shrink-0 pl-1.5 sm:pl-2.5 border-l border-transparent">
+              <div className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
           </div>
 
-          <div className="lg:hidden flex items-center justify-end flex-shrink-0 pl-1.5 sm:pl-2.5 border-l border-transparent">
-            <div className="w-7 h-7 sm:w-8 sm:h-8" />
+          {/* Title Clone */}
+          <span
+            ref={measureTitleRef}
+            className="text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap"
+          >
+            {t('ui.editorTitle')}
+          </span>
+
+          {/* Full Badge Clone */}
+          <div
+            ref={measureFullBadgeRef}
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium border whitespace-nowrap"
+          >
+            <span className="w-1.5 h-1.5 rounded-full" />
+            <span>{hasError ? t('ui.statusInvalid') : t('ui.statusValid')}</span>
           </div>
         </div>
 

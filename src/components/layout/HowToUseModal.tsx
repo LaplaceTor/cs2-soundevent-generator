@@ -106,9 +106,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans">
+        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 sm:space-y-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans min-w-0 break-words [overflow-wrap:anywhere]">
           {/* Section 1: Core Concept */}
-          <div className="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+          <div className="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
             <h4 className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
               <span>🎯</span> {concept.title}
             </h4>
@@ -117,7 +117,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* Section 2: Entity Selection */}
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 min-w-0">
             <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5">
               <span>🔊</span> {t('guideModal.entitiesTitle')}
             </h4>
@@ -126,21 +126,21 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
                 entities.map((ent, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1"
+                    className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 space-y-1 min-w-0 break-words [overflow-wrap:anywhere]"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+                      <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs break-all">
                         {ent.name}
                       </span>
                       <span
-                        className={`px-1.5 py-0.5 text-[9px] font-semibold rounded ${badgeColorClass(
+                        className={`px-1.5 py-0.5 text-[9px] font-semibold rounded whitespace-nowrap flex-shrink-0 ${badgeColorClass(
                           ent.badgeColor
                         )}`}
                       >
                         {ent.badge}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-[11px]">
+                    <p className="text-gray-600 dark:text-gray-400 text-[11px] break-words [overflow-wrap:anywhere]">
                       <strong>{t('guideModal.mechanismLabel')}</strong> {ent.mechanism}
                       <br />
                       <strong>{t('guideModal.scenarioLabel')}</strong> {ent.scenario}
@@ -153,15 +153,15 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* Section 3: 4-Step Practical Implementation */}
-          <div className="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+          <div className="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
             <h4 className="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5">
               <span>🚀</span> {t('guideModal.stepsTitle')}
             </h4>
-            <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-gray-300 text-[11px]">
+            <ol className="list-decimal list-inside space-y-1.5 text-gray-700 dark:text-gray-300 text-[11px] break-words [overflow-wrap:anywhere]">
               {Array.isArray(steps) &&
                 steps.map((st, sIdx) => (
-                  <li key={sIdx}>
-                    <span>{st}</span>
+                  <li key={sIdx} className="break-words [overflow-wrap:anywhere]">
+                    <span className="break-words [overflow-wrap:anywhere]">{st}</span>
                   </li>
                 ))}
             </ol>
