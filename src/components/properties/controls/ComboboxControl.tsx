@@ -23,7 +23,8 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
   const isSelectOnly =
     spec.kind === 'select' ||
     propKey === 'vsnd_selection_type' ||
-    propKey === 'dsp_preset';
+    propKey === 'dsp_preset' ||
+    propKey === 'mixgroup';
 
   if (isSelectOnly) {
     return (
