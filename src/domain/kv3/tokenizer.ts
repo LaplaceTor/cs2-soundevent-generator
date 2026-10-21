@@ -99,6 +99,18 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
       continue;
     }
 
+    // Standalone slash (invalid syntax in KV3, must be handled so it does not cause an infinite loop)
+    if (ch === '/') {
+      diagnostics.push({
+        code: 'INVALID_STATEMENT',
+        line,
+        column,
+      });
+      column++;
+      i++;
+      continue;
+    }
+
     // Semicolon check
     if (ch === ';') {
       diagnostics.push({
@@ -161,28 +173,29 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
 
       while (i < input.length) {
         const c = input[i];
-        if (c === '\n') {
-          line++;
-          column = 1;
-        } else {
-          column++;
+        if (c === '\n' || c === '\r') {
+          // KV3 soundevent strings cannot span across unescaped newlines.
+          // Hitting a newline indicates an unclosed string on this line.
+          break;
         }
 
         if (c === '\\' && i + 1 < input.length) {
           strVal += input[i + 1];
           i += 2;
-          column++;
+          column += 2;
           continue;
         }
 
         if (c === quoteChar) {
           closed = true;
           i++;
+          column++;
           break;
         }
 
         strVal += c;
         i++;
+        column++;
       }
 
       if (!closed) {
@@ -210,6 +223,28 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
       } else {
         break;
       }
+    }
+
+    // Defensive check: if no character was consumed, advance by 1 to prevent infinite loops
+    if (word === '') {
+      diagnostics.push({
+        code: 'INVALID_STATEMENT',
+        line: startLine,
+        column: startCol,
+      });
+      i++;
+      column++;
+      continue;
+    }
+
+    if (word === '.') {
+      diagnostics.push({
+        code: 'STRAY_DOT',
+        line: startLine,
+        column: startCol,
+      });
+      tokens.push({ type: 'IDENTIFIER', value: word, line: startLine, column: startCol });
+      continue;
     }
 
     if (word === 'true' || word === 'false') {

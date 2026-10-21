@@ -73,6 +73,10 @@ export function parseKv3SoundEventDocument(input: string): {
     if (!t) return undefined;
 
     if (t.type === 'STRING') {
+      // If immediately followed by '=', this is the key of the next assignment statement
+      if (tokens[cur + 1]?.type === 'EQUALS') {
+        return undefined;
+      }
       advance();
       return t.value;
     }
@@ -85,6 +89,10 @@ export function parseKv3SoundEventDocument(input: string): {
       return Number(t.value);
     }
     if (t.type === 'IDENTIFIER') {
+      // If immediately followed by '=', this is the key of the next assignment statement
+      if (tokens[cur + 1]?.type === 'EQUALS') {
+        return undefined;
+      }
       advance();
       return t.value;
     }
@@ -145,14 +153,29 @@ export function parseKv3SoundEventDocument(input: string): {
       continue;
     }
 
+    if (keyToken.type === 'EQUALS') {
+      diagnostics.push({ code: 'MISSING_KEY', line: keyToken.line, column: keyToken.column });
+      advance();
+      parseValue();
+      continue;
+    }
+
     if (keyToken.type !== 'IDENTIFIER' && keyToken.type !== 'STRING') {
-      diagnostics.push({ code: 'INVALID_STATEMENT', line: keyToken.line, column: keyToken.column });
+      if (keyToken.type === 'RBRACKET') {
+        diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: keyToken.line, column: keyToken.column });
+      } else {
+        diagnostics.push({ code: 'INVALID_STATEMENT', line: keyToken.line, column: keyToken.column });
+      }
       advance();
       continue;
     }
 
     const key = keyToken.value;
     advance();
+
+    if (!/^[a-zA-Z0-9_]+$/.test(key)) {
+      diagnostics.push({ code: 'INVALID_KEY_NAME', line: keyToken.line, column: keyToken.column, params: { key } });
+    }
 
     // Expect '='
     if (peek()?.type !== 'EQUALS') {
@@ -188,6 +211,18 @@ export function parseKv3SoundEventDocument(input: string): {
     diagnostics.push({ code: 'UNCLOSED_BRACE', line: lbrace.line, column: lbrace.column });
   } else {
     advance(); // consume '}'
+  }
+
+  // Check for any trailing tokens after the event block
+  while (peek()) {
+    const extra = advance()!;
+    if (extra.type === 'RBRACE') {
+      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACE', line: extra.line, column: extra.column });
+    } else if (extra.type === 'RBRACKET') {
+      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: extra.line, column: extra.column });
+    } else {
+      diagnostics.push({ code: 'INVALID_STATEMENT', line: extra.line, column: extra.column });
+    }
   }
 
   if (diagnostics.length > 0) {
