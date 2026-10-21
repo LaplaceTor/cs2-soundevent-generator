@@ -198,7 +198,7 @@ export const RightEditorPanel: React.FC = () => {
         type="button"
         onClick={() => setDrawerOpen(true)}
         aria-label={t('ui.viewCodeBtn')}
-        className="lg:hidden fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="lg:hidden fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] right-[calc(1.25rem+env(safe-area-inset-right,0px))] z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer"
       >
         <span aria-hidden="true">📄</span>
         <span>{t('ui.viewCodeBtn')}</span>
@@ -225,6 +225,11 @@ export const RightEditorPanel: React.FC = () => {
           e.stopPropagation();
         }}
       >
+        {/* Mobile Drawer Pull Indicator */}
+        <div className="w-full flex justify-center pt-2 pb-1 lg:hidden bg-gray-50/50 dark:bg-gray-900/30">
+          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+        </div>
+
         {/* Editor Toolbar - Single-row flex container, never wraps */}
         <div
           ref={toolbarRef}
@@ -341,6 +346,7 @@ export const RightEditorPanel: React.FC = () => {
                 onClick={() => setDrawerOpen(false)}
                 className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-black dark:hover:border-white text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white rounded text-base font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
                 title={t('ui.closeDrawer')}
+                aria-label={t('ui.closeDrawer')}
               >
                 <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
@@ -466,7 +472,7 @@ export const RightEditorPanel: React.FC = () => {
         </div>
 
         {/* Bottom Status Bar */}
-        <div className="h-6 pb-[env(safe-area-inset-bottom,0px)] px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
+        <div className="min-h-[1.5rem] h-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pb-[env(safe-area-inset-bottom,0px)] px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
           <div>{t('ui.cursorLnCol', { ln: cursorPos.line, col: cursorPos.col })}</div>
         </div>
       </section>

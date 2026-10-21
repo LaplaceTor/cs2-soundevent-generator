@@ -167,8 +167,8 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="max-h-40 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded">
-        <table className="curve-table w-full table-fixed">
+      <div className="max-h-40 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+        <table className="curve-table w-full min-w-[420px] table-fixed">
           <thead>
             <tr>
               <th style={{ width: '18%' }}>{t('curveEditor.tableX')}</th>
@@ -246,7 +246,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     type="button"
                     onClick={() => handleDeletePoint(pIdx)}
                     aria-label={`Delete point ${pIdx + 1}`}
-                    className="px-1 text-gray-400 hover:text-red-500 font-bold cursor-pointer"
+                    className="w-6 h-6 inline-flex items-center justify-center text-gray-400 hover:text-red-500 font-bold cursor-pointer rounded transition-colors active:scale-95"
                   >
                     ✕
                   </button>
@@ -261,7 +261,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       <button
         type="button"
         onClick={handleAddPoint}
-        className="mt-1 px-2.5 py-1 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer"
+        className="mt-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
       >
         {t('curveEditor.addPoint')}
       </button>

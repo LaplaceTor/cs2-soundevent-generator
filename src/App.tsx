@@ -22,7 +22,7 @@ export const App: React.FC = () => {
   }, [importShareHash, t]);
 
   return (
-    <div className="bg-white text-gray-900 dark:bg-[#0B0F17] dark:text-gray-100 h-screen h-[100dvh] overflow-hidden flex flex-col font-sans antialiased transition-colors duration-150">
+    <div className="bg-white text-gray-900 dark:bg-[#0B0F17] dark:text-gray-100 h-screen h-[100dvh] overflow-hidden flex flex-col font-sans antialiased transition-colors duration-150 pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
       <Toaster theme={theme} position="bottom-right" richColors />
       <HeaderBar />
       <main className="w-full flex-1 min-h-0 flex flex-col lg:flex-row border-t border-gray-200 dark:border-gray-800 overflow-hidden relative">

@@ -14,6 +14,11 @@ html.dark,
   color-scheme: dark;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-sans);
 }
@@ -24,6 +29,11 @@ select,
 textarea {
   font-family: inherit;
   color-scheme: inherit;
+  touch-action: manipulation;
+}
+
+a {
+  touch-action: manipulation;
 }
 
 .font-mono,
@@ -89,10 +99,10 @@ html.dark select option,
 .custom-checkbox::before {
   content: "";
   position: absolute;
-  top: -6px;
-  left: -6px;
-  right: -6px;
-  bottom: -6px;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
 }
 
 .dark .custom-checkbox {
@@ -182,20 +192,23 @@ html.dark select option,
   cursor: pointer;
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 768px) {
+  .minimal-slider {
+    padding: 12px 0;
+  }
   .minimal-slider::-webkit-slider-thumb {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
   .minimal-slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
   .custom-checkbox::before {
-    top: -10px;
-    left: -10px;
-    right: -10px;
-    bottom: -10px;
+    top: -14px;
+    left: -14px;
+    right: -14px;
+    bottom: -14px;
   }
 }
 
@@ -361,4 +374,18 @@ body.drawer-open {
 
 .cm-scroller {
   overscroll-behavior: contain !important;
+}
+
+/* ==========================================================================
+   Reduced Motion Accessibility Preference
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

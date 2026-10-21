@@ -76,7 +76,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
       aria-modal="true"
       aria-labelledby="how-to-use-modal-title"
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm transition-all duration-200 ease-out",
+        "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pl-[calc(0.75rem+env(safe-area-inset-left,0px))] pr-[calc(0.75rem+env(safe-area-inset-right,0px))] bg-black/60 backdrop-blur-sm transition-all duration-200 ease-out",
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}
       onClick={onClose}

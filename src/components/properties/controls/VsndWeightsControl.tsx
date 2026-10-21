@@ -58,8 +58,8 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="max-h-48 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded">
-        <table className="curve-table w-full table-fixed">
+      <div className="max-h-48 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+        <table className="curve-table w-full min-w-[260px] table-fixed">
           <thead>
             <tr>
               <th style={{ width: '22%' }}>{t('weightsEditor.slot')}</th>
@@ -94,10 +94,10 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
                     <button
                       type="button"
                       onClick={() => handleDeleteWeight(idx)}
-                      className={`px-1.5 font-bold cursor-pointer transition-colors ${
+                      className={`w-6 h-6 inline-flex items-center justify-center font-bold cursor-pointer transition-colors rounded ${
                         weights.length <= 2
                           ? 'text-gray-300 dark:text-gray-700 hover:text-gray-400'
-                          : 'text-gray-400 hover:text-red-500'
+                          : 'text-gray-400 hover:text-red-500 active:scale-95'
                       }`}
                       title={weights.length <= 2 ? t('weightsEditor.minWarning') : t('weightsEditor.delete')}
                       aria-label={t('weightsEditor.delete')}
@@ -117,7 +117,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
         <button
           type="button"
           onClick={handleAddWeight}
-          className="px-2.5 py-1 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer"
+          className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
         >
           {t('weightsEditor.addWeight')}
         </button>

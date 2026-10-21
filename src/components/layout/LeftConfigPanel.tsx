@@ -475,7 +475,7 @@ export const LeftConfigPanel: React.FC = () => {
       <div
         id="groupsContainer"
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden divide-y divide-gray-200 dark:divide-gray-800 pb-16 lg:pb-0"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden divide-y divide-gray-200 dark:divide-gray-800 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0"
       >
         {filteredGroups.map((g: any) => (
           <PropertyGroupAccordion

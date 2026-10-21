@@ -20,7 +20,7 @@ export const HeaderBar: React.FC = () => {
   };
 
   return (
-    <header className="min-h-14 py-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between flex-shrink-0">
+    <header className="min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[calc(0.5rem+env(safe-area-inset-top,0px))] pb-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur sticky top-0 z-40 pl-[calc(1rem+env(safe-area-inset-left,0px))] pr-[calc(1rem+env(safe-area-inset-right,0px))] lg:px-6 flex items-center justify-between flex-shrink-0">
       {/* Title */}
       <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
         <h1 className="text-xs font-bold uppercase tracking-widest text-black dark:text-white flex items-center gap-2 whitespace-nowrap m-0 font-sans">
