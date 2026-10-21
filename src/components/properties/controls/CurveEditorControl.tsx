@@ -93,7 +93,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
     else if (span <= 10) step = 1.0;
     else if (span <= 100) step = 10.0;
 
-    const newX = span <= 1.5 ? Number((last[0]! + step).toFixed(2)) : Math.round(last[0]! + step);
+    const newX = span <= 10 ? Number((last[0]! + step).toFixed(2)) : Math.round(last[0]! + step);
     const next = [...localPoints, [newX, Number(last[1]!.toFixed(2)), 0, 0, 2, 3]].sort(
       (a, b) => a[0]! - b[0]!
     );
@@ -186,7 +186,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                 <td>
                   <input
                     type="number"
-                    step="0.05"
+                    step="0.01"
                     value={pt[0]}
                     onChange={(e) => handleCellChange(pIdx, 0, parseFloat(e.target.value) || 0)}
                     className="curve-cell-input"
@@ -195,7 +195,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                 <td>
                   <input
                     type="number"
-                    step="0.05"
+                    step="0.01"
                     value={pt[1]}
                     onChange={(e) => handleCellChange(pIdx, 1, parseFloat(e.target.value) || 0)}
                     className="curve-cell-input"

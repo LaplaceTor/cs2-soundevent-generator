@@ -118,43 +118,34 @@ export function setupAllCurveValues(points: CurvePoint[]): void {
 
 export function sampleCurve(xValue: number, points: CurvePoint[]): number {
   const total = points.length;
-  if (total <= 1) return -1.0;
+  if (total === 0) return 0.0;
+  if (total === 1) return points[0]!.yValue;
 
-  const last_point = total - 1;
-  let u_var2 = 1;
-  let u_var1 = 1;
-  let u_var3 = last_point;
-  let cur_point = 1;
+  const lastPoint = total - 1;
 
-  if (last_point !== 0) {
-    let broke = false;
-    while (u_var2 <= u_var3) {
-      cur_point = (u_var3 + u_var2) >> 1;
-      if (xValue <= points[cur_point]!.xValue) {
-        if (points[cur_point]!.xValue <= xValue) {
-          broke = true;
-          break;
-        }
-        u_var3 = cur_point - 1;
-      } else {
-        u_var2 = cur_point + 1;
-      }
-      u_var1 = cur_point;
-    }
-    if (!broke) {
-      cur_point = u_var1;
-    }
+  if (xValue <= points[0]!.xValue) {
+    return points[0]!.yValue;
+  }
+  if (xValue >= points[lastPoint]!.xValue) {
+    return points[lastPoint]!.yValue;
+  }
 
-    if (points[u_var1]!.xValue <= xValue) {
-      cur_point = u_var1 + 1;
-      if (last_point <= u_var1) {
-        cur_point = u_var1;
-      }
+  let low = 0;
+  let high = lastPoint - 1;
+  let segIdx = 0;
+
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (points[mid]!.xValue <= xValue) {
+      segIdx = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
     }
   }
 
-  const left_point = points[cur_point - 1];
-  const right_point = points[cur_point];
+  const left_point = points[segIdx];
+  const right_point = points[segIdx + 1];
   if (!left_point || !right_point) return -1.0;
 
   const delta_x = right_point.xValue - left_point.xValue;

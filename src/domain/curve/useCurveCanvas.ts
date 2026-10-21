@@ -172,7 +172,7 @@ export function useCurveCanvas({
 
         if (isActive || isHover) {
           const span = maxX - minX;
-          const xDisplay = span <= 1.5 ? p.xValue.toFixed(3) : Math.round(p.xValue).toString();
+          const xDisplay = span <= 10 ? p.xValue.toFixed(2) : Math.round(p.xValue).toString();
           const tipText = `(${xDisplay}, ${p.yValue.toFixed(2)})`;
           ctx.font = '10px Inter, sans-serif';
           const textW = ctx.measureText(tipText).width;
@@ -312,10 +312,33 @@ export function useCurveCanvas({
       if (!transformersRef.current) return;
       const { toDataX, toDataY } = transformersRef.current;
       const pos = getMousePos(e);
-      let newX = Math.max(0, Math.round(toDataX(pos.x)));
+
+      const currentPts = pointsRef.current;
+      const lastIdx = currentPts.length - 1;
+      const span =
+        lastIdx >= 0
+          ? Math.max(0.1, (currentPts[lastIdx]?.[0] ?? 1) - (currentPts[0]?.[0] ?? 0))
+          : 1;
+
+      const rawX = toDataX(pos.x);
+      let newX: number;
+      if (span <= 10) {
+        newX = Math.round(rawX * 100) / 100;
+      } else if (span <= 50) {
+        newX = Math.round(rawX * 10) / 10;
+      } else {
+        newX = Math.round(rawX);
+      }
+      newX = Math.max(0, newX);
+
+      // Prevent adding a duplicate point if one already exists at this exact X
+      if (currentPts.some((p) => Math.abs(p[0]! - newX) < 1e-4)) {
+        return;
+      }
+
       let newY = Math.max(0, Math.min(2.0, Math.round(toDataY(pos.y) * 100) / 100));
 
-      const updated = [...pointsRef.current, [newX, newY, 0, 0, 2, 3]].sort(
+      const updated = [...currentPts, [newX, newY, 0, 0, 2, 3]].sort(
         (a, b) => a[0]! - b[0]!
       );
       pointsRef.current = updated;
