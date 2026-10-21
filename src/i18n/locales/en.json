@@ -274,7 +274,7 @@
     "block_other_duration": "How long, in seconds, events matched by Block Other Name are blocked.",
     "block_other_distance": "Maximum distance within which events matched by Block Other Name are blocked.",
     "velocity_volume_seek_speed": "Smoothing speed used when the velocity-driven volume value moves toward its target.",
-    "ducking_bypass": "Blends the event toward the ducking-bypass routing path so it can avoid normal ducking.",
+    "ducking_bypass": "Bypasses the engine's ducking attenuation so it would never be lowered by intense firefights, flashbang tinnitus, or voice chat.",
     "retrigger_radius": "Retrigger only while the listener is inside this radius. Values at or below 0 disable the radius requirement.",
     "self_destruct_time": "Automatically drives the event toward stop or fade after this many elapsed seconds. Negative values disable the timer.",
     "value": "Generic numeric value used by setter-style sound-event stacks. Its exact meaning depends on the event Type.",
