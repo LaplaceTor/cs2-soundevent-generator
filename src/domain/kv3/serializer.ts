@@ -33,7 +33,7 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   }
 
   if (kind === 'string_bool') {
-    return typeof val === 'boolean' ? (val ? '"true"' : '"false"') : val ? `"${val}"` : '"false"';
+    return typeof val === 'boolean' ? (val ? '"true"' : '"false"') : val ? `"${escapeKv3String(val)}"` : '"false"';
   }
 
   if (kind === 'float_bool') {

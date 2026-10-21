@@ -14,7 +14,10 @@ import {
 import { serializeSoundEvent } from '../domain/kv3/serializer';
 import { parseKv3SoundEventDocument } from '../domain/kv3/parser';
 import type { Kv3Diagnostic } from '../domain/kv3/types';
-import { SoundEventSharePayloadSchema } from '../domain/schema/validation';
+import {
+  SoundEventSharePayloadSchema,
+  Kv3PrimitiveOrArraySchema,
+} from '../domain/schema/validation';
 import i18n from '../i18n';
 
 export type SyncOrigin = 'controls' | 'editor' | 'init' | 'preset';
@@ -611,7 +614,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         const values: Record<string, any> = {};
         for (const [k, v] of Object.entries(rawValues)) {
           if (DANGEROUS_KEYS.has(k)) continue;
-          if (/^[a-zA-Z0-9_]+$/.test(k)) {
+          if (/^[a-zA-Z0-9_]+$/.test(k) && Kv3PrimitiveOrArraySchema.safeParse(v).success) {
             values[k] = v;
           }
         }
@@ -619,7 +622,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         const custom: Record<string, any> = {};
         for (const [k, v] of Object.entries(rawCustom)) {
           if (DANGEROUS_KEYS.has(k)) continue;
-          if (/^[a-zA-Z0-9_]+$/.test(k)) {
+          if (/^[a-zA-Z0-9_]+$/.test(k) && Kv3PrimitiveOrArraySchema.safeParse(v).success) {
             custom[k] = v;
           }
         }
