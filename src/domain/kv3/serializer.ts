@@ -154,7 +154,8 @@ export function serializeSoundEvent(
   options: SerializeOptions = {}
 ): string {
   const { includeComments = false, commentLookup, customProperties = {} } = options;
-  const validName = (eventName || 'SoundEvent_Custom').trim() || 'SoundEvent_Custom';
+  const rawName = (eventName || 'SoundEvent_Custom').trim() || 'SoundEvent_Custom';
+  const validName = rawName.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]/g, '');
 
   const lines: string[] = [];
   lines.push(`"${validName}" =`);

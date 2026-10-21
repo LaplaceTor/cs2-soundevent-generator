@@ -2,12 +2,39 @@
 <html lang="zh-CN" class="dark" style="color-scheme: dark;">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>CS2 SoundEvent Generator | Valve Source 2 Audio Tool</title>
     <meta
       name="description"
       content="Modern Minimalist Visual Generator & Two-Way Editor for Counter-Strike 2 SoundEvent KeyValues3"
     />
+
+    <!-- Preload hydration: prevent FOUC / theme & language flicker -->
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('cs2_soundevent_generator_store_v2');
+          if (raw) {
+            var data = JSON.parse(raw);
+            var theme = data?.state?.theme;
+            if (theme === 'light') {
+              document.documentElement.classList.remove('dark');
+              document.documentElement.classList.add('light');
+              document.documentElement.style.colorScheme = 'light';
+            } else if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+              document.documentElement.classList.remove('light');
+              document.documentElement.style.colorScheme = 'dark';
+            }
+            var lang = data?.state?.lang;
+            if (lang) {
+              document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Inter & JetBrains Mono Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

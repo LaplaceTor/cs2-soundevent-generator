@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
 import { Kv3CodeMirror } from '@/components/editor/Kv3CodeMirror';
-import { HowToUseModal } from '@/components/layout/HowToUseModal';
 import { toast } from 'sonner';
 import { Copy, Zap, Lightbulb, X, Share2 } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
+
+const HowToUseModal = React.lazy(() =>
+  import('@/components/layout/HowToUseModal').then((m) => ({ default: m.HowToUseModal }))
+);
 
 export const RightEditorPanel: React.FC = () => {
   const { t } = useTranslation();
@@ -169,6 +172,15 @@ export const RightEditorPanel: React.FC = () => {
     return t(codeKey as any, { line: firstError.line, ...firstError.params });
   };
 
+  const handleEditorChange = useCallback(
+    (newCode: string) => {
+      React.startTransition(() => {
+        updateCodeFromEditor(newCode);
+      });
+    },
+    [updateCodeFromEditor]
+  );
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -186,7 +198,7 @@ export const RightEditorPanel: React.FC = () => {
         type="button"
         onClick={() => setDrawerOpen(true)}
         aria-label={t('ui.viewCodeBtn')}
-        className="lg:hidden fixed bottom-5 right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="lg:hidden fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-2xl border border-gray-800/20 dark:border-white/20 font-mono text-xs font-semibold hover:scale-105 active:scale-95 transition-all cursor-pointer"
       >
         <span aria-hidden="true">📄</span>
         <span>{t('ui.viewCodeBtn')}</span>
@@ -447,20 +459,24 @@ export const RightEditorPanel: React.FC = () => {
         >
           <Kv3CodeMirror
             value={code}
-            onChange={updateCodeFromEditor}
+            onChange={handleEditorChange}
             onCursorChange={(l, c) => setCursorPos({ line: l, col: c })}
             errorLine={firstError?.line}
           />
         </div>
 
         {/* Bottom Status Bar */}
-        <div className="h-6 px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
+        <div className="h-6 pb-[env(safe-area-inset-bottom,0px)] px-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end text-[11px] font-mono text-gray-400 bg-gray-50/30 dark:bg-gray-950/20 flex-shrink-0">
           <div>{t('ui.cursorLnCol', { ln: cursorPos.line, col: cursorPos.col })}</div>
         </div>
       </section>
 
       {/* How To Use Modal */}
-      <HowToUseModal isOpen={isHowToUseOpen} onClose={() => setIsHowToUseOpen(false)} />
+      {isHowToUseOpen && (
+        <React.Suspense fallback={null}>
+          <HowToUseModal isOpen={isHowToUseOpen} onClose={() => setIsHowToUseOpen(false)} />
+        </React.Suspense>
+      )}
     </>
   );
 };

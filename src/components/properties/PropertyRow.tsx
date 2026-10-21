@@ -16,7 +16,7 @@ interface PropertyRowProps {
   propKey: string;
 }
 
-export const PropertyRow: React.FC<PropertyRowProps> = ({ propKey }) => {
+export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) => {
   const { t } = useTranslation();
   const spec = SPECS[propKey];
   const isEnabled = useSoundEventStore((s) => s.enabledProperties.has(propKey));
@@ -230,4 +230,6 @@ export const PropertyRow: React.FC<PropertyRowProps> = ({ propKey }) => {
       <div className="mt-2 pl-6">{renderControl()}</div>
     </div>
   );
-};
+});
+
+PropertyRow.displayName = 'PropertyRow';

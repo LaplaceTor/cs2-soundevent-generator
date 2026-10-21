@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "check": "tsc --noEmit",
-    "build": "tsc --noEmit && node build.mjs",
+    "check": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "build": "node ./node_modules/typescript/bin/tsc --noEmit && node build.mjs",
     "preview": "node serve.mjs"
   },
   "dependencies": {
@@ -17,7 +17,6 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.4",
     "clsx": "^2.1.1",
-    "esbuild-wasm": "^0.28.2",
     "i18next": "^24.2.2",
     "immer": "^10.1.1",
     "lucide-react": "^0.475.0",
@@ -45,6 +44,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "esbuild-wasm": "^0.28.2",
     "postcss": "^8.5.2",
     "rollup": "^4.64.12",
     "rollup-plugin-postcss": "^4.0.2",

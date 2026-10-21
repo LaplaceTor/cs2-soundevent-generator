@@ -125,6 +125,10 @@ export const LeftConfigPanel: React.FC = () => {
     if (prevSimplifiedRef.current !== isSimplified) {
       prevSimplifiedRef.current = isSimplified;
 
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
       flipRefs.current.forEach((el, key) => {
         const prev = lastRectsRef.current.get(key);
         if (!prev) return;
@@ -132,7 +136,7 @@ export const LeftConfigPanel: React.FC = () => {
         const dx = prev.left - current.left;
         const dy = prev.top - current.top;
 
-        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        if (!prefersReducedMotion && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
           if (typeof el.getAnimations === 'function') {
             el.getAnimations().forEach((a) => a.cancel());
           }

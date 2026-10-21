@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { EditorState, StateEffect, StateField, Compartment } from '@codemirror/state';
 import {
   EditorView,
@@ -107,13 +107,41 @@ export const Kv3CodeMirror: React.FC<Kv3CodeMirrorProps> = ({
   const themeCompartment = useRef(new Compartment());
   const theme = useSoundEventStore((s) => s.theme);
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const pendingValueRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPendingChange = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (pendingValueRef.current !== null) {
+      const pending = pendingValueRef.current;
+      pendingValueRef.current = null;
+      onChangeRef.current(pending);
+    }
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newCode = update.state.doc.toString();
-        onChange(newCode);
+        pendingValueRef.current = newCode;
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+          debounceTimerRef.current = null;
+          if (pendingValueRef.current !== null) {
+            const pending = pendingValueRef.current;
+            pendingValueRef.current = null;
+            onChangeRef.current(pending);
+          }
+        }, 120);
       }
       if (update.selectionSet || update.docChanged) {
         const pos = update.state.selection.main.head;
@@ -134,6 +162,11 @@ export const Kv3CodeMirror: React.FC<Kv3CodeMirrorProps> = ({
         errorLineState,
         errorGutterExtension,
         updateListener,
+        EditorView.domEventHandlers({
+          blur: () => {
+            flushPendingChange();
+          },
+        }),
         keymap.of([...defaultKeymap, indentWithTab]),
         themeCompartment.current.of(createMinimalistTheme(theme)),
       ],
@@ -147,9 +180,10 @@ export const Kv3CodeMirror: React.FC<Kv3CodeMirrorProps> = ({
     viewRef.current = view;
 
     return () => {
+      flushPendingChange();
       view.destroy();
     };
-  }, []);
+  }, [flushPendingChange]);
 
   // Sync theme changes dynamically
   useEffect(() => {
@@ -166,6 +200,12 @@ export const Kv3CodeMirror: React.FC<Kv3CodeMirrorProps> = ({
     if (!view) return;
     const currentDoc = view.state.doc.toString();
     if (currentDoc !== value) {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      pendingValueRef.current = null;
+
       const selection = view.state.selection;
       const newLength = value.length;
       view.dispatch({

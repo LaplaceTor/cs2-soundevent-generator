@@ -14,5 +14,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (
+              id.includes('@codemirror') ||
+              id.includes('w3c-keyname') ||
+              id.includes('crelt') ||
+              id.includes('style-mod')
+            ) {
+              return 'codemirror';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
   },
 });
