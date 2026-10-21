@@ -559,7 +559,10 @@ export const useSoundEventStore = create<SoundEventState>()(
               state.propertyValues = {};
               state.customProperties = {};
 
+              const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
               for (const [k, v] of Object.entries(validated.p)) {
+                if (DANGEROUS_KEYS.has(k)) continue;
+                if (!/^[a-zA-Z0-9_]+$/.test(k)) continue;
                 if (SPECS[k]) {
                   state.enabledProperties.add(k);
                   state.propertyValues[k] = v;
@@ -601,15 +604,36 @@ export const useSoundEventStore = create<SoundEventState>()(
       merge: (persistedState: any, currentState: SoundEventState) => {
         if (!persistedState) return currentState;
         const enabled = new Set<string>(persistedState.enabledProperties || []);
-        const values = { ...(persistedState.propertyValues || {}) };
-        const custom = { ...(persistedState.customProperties || {}) };
-        const eventName = persistedState.eventName || currentState.eventName;
+        const rawValues = persistedState.propertyValues || {};
+        const rawCustom = persistedState.customProperties || {};
+
+        const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+        const values: Record<string, any> = {};
+        for (const [k, v] of Object.entries(rawValues)) {
+          if (DANGEROUS_KEYS.has(k)) continue;
+          if (/^[a-zA-Z0-9_]+$/.test(k)) {
+            values[k] = v;
+          }
+        }
+
+        const custom: Record<string, any> = {};
+        for (const [k, v] of Object.entries(rawCustom)) {
+          if (DANGEROUS_KEYS.has(k)) continue;
+          if (/^[a-zA-Z0-9_]+$/.test(k)) {
+            custom[k] = v;
+          }
+        }
+
+        const rawEventName = typeof persistedState.eventName === 'string' ? persistedState.eventName.trim() : '';
+        const safeEventName = rawEventName && !/[\r\n\x00-\x1f]/.test(rawEventName)
+          ? rawEventName.slice(0, 128)
+          : currentState.eventName;
         const lang = persistedState.lang || currentState.lang;
         const theme = persistedState.theme || currentState.theme;
         const includeComments = Boolean(persistedState.includeComments);
 
         normalizeDependencies(enabled, values);
-        const code = generateCode(eventName, enabled, values, custom, includeComments);
+        const code = generateCode(safeEventName, enabled, values, custom, includeComments);
 
         i18n.changeLanguage(lang);
         if (typeof document !== 'undefined') {
@@ -620,7 +644,7 @@ export const useSoundEventStore = create<SoundEventState>()(
 
         return {
           ...currentState,
-          eventName,
+          eventName: safeEventName,
           enabledProperties: enabled,
           propertyValues: values,
           customProperties: custom,

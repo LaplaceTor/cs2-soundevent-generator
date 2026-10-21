@@ -7,6 +7,7 @@ export function normalizeVsndPath(pathStr: string): string {
   if (!pathStr) return '';
   let p = pathStr.trim().replace(/\\/g, '/');
   p = p.replace(/^["']+|["']+$/g, '');
+  p = p.replace(/"/g, '').replace(/[\r\n]/g, '');
   const dotIdx = p.lastIndexOf('.');
   if (dotIdx !== -1) {
     p = p.substring(0, dotIdx) + '.vsnd';
@@ -16,12 +17,19 @@ export function normalizeVsndPath(pathStr: string): string {
   return p;
 }
 
+export function escapeKv3String(str: any): string {
+  return String(str ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '')
+    .replace(/\n/g, '\\n');
+}
+
 export function formatKv3Value(key: string, val: any, spec?: PropertySpec): string {
   const kind = spec?.kind ?? 'unknown';
 
   if (kind === 'base' || kind === 'string' || key === 'base') {
-    const cleanStr = String(val ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    return `"${cleanStr}"`;
+    return `"${escapeKv3String(val)}"`;
   }
 
   if (kind === 'string_bool') {
@@ -76,11 +84,11 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
 
   if (kind === 'array_string') {
     if (Array.isArray(val)) {
-      const items = val.map((s) => `\t\t\t"${String(s).replace(/"/g, '\\"')}",`);
+      const items = val.map((s) => `\t\t\t"${escapeKv3String(s)}",`);
       if (items.length === 0) return '[ ]';
       return `[\n${items.join('\n')}\n\t\t]`;
     }
-    return `[ "${String(val)}" ]`;
+    return `[ "${escapeKv3String(val)}" ]`;
   }
 
   if (kind === 'array_float') {
@@ -138,8 +146,7 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   }
 
   // String
-  const cleanStr = String(val).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  return `"${cleanStr}"`;
+  return `"${escapeKv3String(val)}"`;
 }
 
 export interface SerializeOptions {
@@ -147,6 +154,8 @@ export interface SerializeOptions {
   commentLookup?: (key: string) => string | undefined;
   customProperties?: Record<string, any>;
 }
+
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 export function serializeSoundEvent(
   eventName: string,
@@ -165,17 +174,23 @@ export function serializeSoundEvent(
   const allProps: Record<string, any> = { ...properties, ...customProperties };
 
   for (const [key, val] of Object.entries(allProps)) {
-    const spec = SPECS[key];
+    if (DANGEROUS_KEYS.has(key)) continue;
+    const safeKey = key.replace(/[^a-zA-Z0-9_]/g, '');
+    if (!safeKey) continue;
+
+    const spec = SPECS[safeKey];
 
     if (includeComments && commentLookup) {
-      const commentDesc = commentLookup(key);
+      const commentDesc = commentLookup(safeKey);
       if (commentDesc) {
-        lines.push(`\t// ${commentDesc}`);
+        // Strip line breaks to prevent comment breaking out into code injection
+        const safeComment = commentDesc.replace(/[\r\n]+/g, ' ');
+        lines.push(`\t// ${safeComment}`);
       }
     }
 
-    const formattedVal = formatKv3Value(key, val, spec);
-    lines.push(`\t${key} = ${formattedVal}`);
+    const formattedVal = formatKv3Value(safeKey, val, spec);
+    lines.push(`\t${safeKey} = ${formattedVal}`);
   }
 
   lines.push('}');
