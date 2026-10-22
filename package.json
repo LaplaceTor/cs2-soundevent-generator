@@ -4,9 +4,9 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node ./node_modules/vite/bin/vite.js",
     "check": "node ./node_modules/typescript/bin/tsc --noEmit",
-    "build": "node ./node_modules/typescript/bin/tsc --noEmit && node build.mjs",
+    "build": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vite/bin/vite.js build",
     "preview": "node serve.mjs"
   },
   "dependencies": {
@@ -29,25 +29,12 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.7",
-    "@babel/preset-react": "^8.0.1",
-    "@babel/preset-typescript": "^8.0.7",
-    "@rollup/plugin-alias": "^6.0.0",
-    "@rollup/plugin-babel": "^7.1.0",
-    "@rollup/plugin-commonjs": "^29.0.3",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-replace": "^6.0.3",
-    "@rollup/plugin-typescript": "^12.3.0",
     "@types/node": "^22.13.4",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "esbuild-wasm": "^0.28.2",
     "postcss": "^8.5.2",
-    "rollup": "^4.64.12",
-    "rollup-plugin-postcss": "^4.0.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
     "vite": "^6.1.0"
