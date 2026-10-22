@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { produce, enableMapSet } from 'immer';
 
 enableMapSet();
@@ -13,7 +13,7 @@ import {
 } from '../domain/schema/dependencies';
 import { serializeSoundEvent } from '../domain/kv3/serializer';
 import { parseKv3SoundEventDocument } from '../domain/kv3/parser';
-import type { Kv3Diagnostic } from '../domain/kv3/types';
+import type { Kv3SoundEventDocument } from '../domain/kv3/types';
 import {
   SoundEventSharePayloadSchema,
   Kv3PrimitiveOrArraySchema,
@@ -21,10 +21,9 @@ import {
   validateSingleProperty,
 } from '../domain/schema/validation';
 import i18n, { loadLanguage } from '../i18n';
+import { useEditorStore, registerDocumentSyncHandler } from './useEditorStore';
 
-export type SyncOrigin = 'controls' | 'editor' | 'init' | 'preset';
-
-interface SoundEventState {
+export interface SoundEventState {
   eventName: string;
   selectedPresetId: string;
   enabledProperties: Set<string>;
@@ -34,46 +33,27 @@ interface SoundEventState {
   lang: 'zh' | 'en';
   theme: 'dark' | 'light';
 
-  // Editor states
-  code: string;
-  diagnostics: Kv3Diagnostic[];
-  fieldErrors: Record<string, string>;
-  isEditorDrawerOpen: boolean;
-
-  // Search & Filter
-  searchQuery: string;
-  filterActiveOnly: boolean;
-  expandedGroups: Set<string>;
-
-  // Sync origin tracking
-  syncOrigin: SyncOrigin;
-
   // Actions
-  setEventName: (name: string, origin?: SyncOrigin) => void;
+  setEventName: (name: string) => void;
   setPropertyEnabled: (key: string, enabled: boolean) => void;
   setPropertyValue: (key: string, val: any) => void;
   applyPreset: (presetId: string) => void;
-  toggleGroupExpanded: (groupId: string) => void;
-  expandAllGroups: (allGroupIds: string[]) => void;
-  collapseAllGroups: () => void;
-  setSearchQuery: (query: string) => void;
-  setFilterActiveOnly: (activeOnly: boolean) => void;
   setIncludeComments: (include: boolean) => void;
   setLang: (lang: 'zh' | 'en') => void;
   setTheme: (theme: 'dark' | 'light') => void;
-  setEditorDrawerOpen: (open: boolean) => void;
 
-  // Code editor sync
-  updateCodeFromEditor: (newCode: string) => void;
+  // Syncing with editor & share
+  syncFromValidatedDocument: (
+    document: Kv3SoundEventDocument,
+    normalizedProps?: Record<string, any>
+  ) => void;
   formatCurrentCode: () => boolean;
-
-  // URL Hash export / import
-  exportShareHash: () => string;
+  exportShareHash: () => string | null;
   importShareHash: (hash: string) => boolean;
 }
 
 // Helper: strictly enforce min/max pairs and dependencies
-function normalizeDependencies(
+export function normalizeDependencies(
   enabled: Set<string>,
   values: Record<string, any>
 ) {
@@ -157,6 +137,79 @@ function generateCode(
   });
 }
 
+function syncCodeToEditor(
+  eventName: string,
+  enabled: Set<string>,
+  values: Record<string, any>,
+  custom: Record<string, any>,
+  includeComments: boolean
+) {
+  const code = generateCode(eventName, enabled, values, custom, includeComments);
+  useEditorStore.getState().setCodeFromControls(code);
+  return code;
+}
+
+// Debounced and dirty-checked localStorage adapter
+function createDebouncedStorage(delayMs = 800): StateStorage {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let pendingKey: string | null = null;
+  let pendingValue: string | null = null;
+  let lastSavedValue: string | null = null;
+
+  const flush = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (pendingKey && pendingValue !== null) {
+      if (pendingValue !== lastSavedValue) {
+        try {
+          localStorage.setItem(pendingKey, pendingValue);
+          lastSavedValue = pendingValue;
+        } catch (e) {
+          console.warn('Failed to save to localStorage:', e);
+        }
+      }
+      pendingKey = null;
+      pendingValue = null;
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+  }
+
+  return {
+    getItem: (name: string): string | null => {
+      if (pendingKey === name && pendingValue !== null) {
+        return pendingValue;
+      }
+      const val = localStorage.getItem(name);
+      lastSavedValue = val;
+      return val;
+    },
+    setItem: (name: string, value: string): void => {
+      pendingKey = name;
+      pendingValue = value;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(flush, delayMs);
+    },
+    removeItem: (name: string): void => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      pendingKey = null;
+      pendingValue = null;
+      lastSavedValue = null;
+      localStorage.removeItem(name);
+    },
+  };
+}
+
 export const useSoundEventStore = create<SoundEventState>()(
   persist(
     (set, get) => ({
@@ -180,42 +233,28 @@ export const useSoundEventStore = create<SoundEventState>()(
       lang: 'zh',
       theme: 'dark',
 
-      code: '',
-      diagnostics: [],
-      fieldErrors: {},
-      isEditorDrawerOpen: false,
-
-      searchQuery: '',
-      filterActiveOnly: false,
-      expandedGroups: new Set(['general', 'playback', 'position']),
-
-      syncOrigin: 'init',
-
-      setEventName: (name, origin = 'controls') =>
+      setEventName: (name) =>
         set(
           produce((state: SoundEventState) => {
             state.eventName = name;
-            state.syncOrigin = origin;
-            if (origin !== 'editor') {
-              state.code = generateCode(
-                state.eventName,
-                state.enabledProperties,
-                state.propertyValues,
-                state.customProperties,
-                state.includeComments
-              );
-            }
+            syncCodeToEditor(
+              state.eventName,
+              state.enabledProperties,
+              state.propertyValues,
+              state.customProperties,
+              state.includeComments
+            );
           })
         ),
 
       setPropertyEnabled: (key, enabled) =>
         set(
           produce((state: SoundEventState) => {
-            state.syncOrigin = 'controls';
             if (enabled) {
               state.enabledProperties.add(key);
               if (!(key in state.propertyValues) || state.propertyValues[key] === undefined) {
-                state.propertyValues[key] = DEFAULTS[key] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[key])) : 0;
+                state.propertyValues[key] =
+                  DEFAULTS[key] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[key])) : 0;
               }
               if (key === 'base' && typeof state.propertyValues[key] !== 'string') {
                 state.propertyValues[key] = '';
@@ -228,7 +267,8 @@ export const useSoundEventStore = create<SoundEventState>()(
                 for (const ck of children) {
                   state.enabledProperties.add(ck);
                   if (!(ck in state.propertyValues) || state.propertyValues[ck] === undefined) {
-                    state.propertyValues[ck] = DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
+                    state.propertyValues[ck] =
+                      DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
                   }
                 }
               }
@@ -301,14 +341,11 @@ export const useSoundEventStore = create<SoundEventState>()(
                 state.enabledProperties.delete(linked);
               }
 
-              delete state.fieldErrors[key];
-              if (Object.keys(state.fieldErrors).length === 0) {
-                state.diagnostics = [];
-              }
+              useEditorStore.getState().clearFieldValidationError(key);
             }
 
             normalizeDependencies(state.enabledProperties, state.propertyValues);
-            state.code = generateCode(
+            syncCodeToEditor(
               state.eventName,
               state.enabledProperties,
               state.propertyValues,
@@ -321,19 +358,14 @@ export const useSoundEventStore = create<SoundEventState>()(
       setPropertyValue: (key, val) =>
         set(
           produce((state: SoundEventState) => {
-            state.syncOrigin = 'controls';
             state.propertyValues[key] = val;
 
             const { isValid, diagnostic } = validateSingleProperty(key, val);
             if (!isValid && diagnostic) {
-              state.fieldErrors[key] = diagnostic.code;
-              state.diagnostics = [diagnostic];
+              useEditorStore.getState().setFieldValidationError(key, diagnostic);
               return;
             } else {
-              delete state.fieldErrors[key];
-              if (Object.keys(state.fieldErrors).length === 0) {
-                state.diagnostics = [];
-              }
+              useEditorStore.getState().clearFieldValidationError(key);
             }
 
             // Parent toggle turned true/false
@@ -352,7 +384,8 @@ export const useSoundEventStore = create<SoundEventState>()(
                 for (const ck of children) {
                   state.enabledProperties.add(ck);
                   if (!(ck in state.propertyValues) || state.propertyValues[ck] === undefined) {
-                    state.propertyValues[ck] = DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
+                    state.propertyValues[ck] =
+                      DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
                   }
                 }
               }
@@ -393,7 +426,7 @@ export const useSoundEventStore = create<SoundEventState>()(
             }
 
             normalizeDependencies(state.enabledProperties, state.propertyValues);
-            state.code = generateCode(
+            syncCodeToEditor(
               state.eventName,
               state.enabledProperties,
               state.propertyValues,
@@ -409,7 +442,6 @@ export const useSoundEventStore = create<SoundEventState>()(
             const preset = PRESETS[presetId];
             if (!preset) return;
             state.selectedPresetId = presetId;
-            state.syncOrigin = 'preset';
             state.eventName = preset.eventName;
             state.enabledProperties.clear();
             state.propertyValues = {};
@@ -421,9 +453,7 @@ export const useSoundEventStore = create<SoundEventState>()(
             }
 
             normalizeDependencies(state.enabledProperties, state.propertyValues);
-            state.diagnostics = [];
-            state.fieldErrors = {};
-            state.code = generateCode(
+            syncCodeToEditor(
               state.eventName,
               state.enabledProperties,
               state.propertyValues,
@@ -433,40 +463,11 @@ export const useSoundEventStore = create<SoundEventState>()(
           })
         ),
 
-      toggleGroupExpanded: (groupId) =>
-        set(
-          produce((state: SoundEventState) => {
-            if (state.expandedGroups.has(groupId)) {
-              state.expandedGroups.delete(groupId);
-            } else {
-              state.expandedGroups.add(groupId);
-            }
-          })
-        ),
-
-      expandAllGroups: (allGroupIds) =>
-        set(
-          produce((state: SoundEventState) => {
-            state.expandedGroups = new Set(allGroupIds);
-          })
-        ),
-
-      collapseAllGroups: () =>
-        set(
-          produce((state: SoundEventState) => {
-            state.expandedGroups.clear();
-          })
-        ),
-
-      setSearchQuery: (query) => set({ searchQuery: query }),
-      setFilterActiveOnly: (activeOnly) => set({ filterActiveOnly: activeOnly }),
-
       setIncludeComments: (include) =>
         set(
           produce((state: SoundEventState) => {
             state.includeComments = include;
-            state.syncOrigin = 'controls';
-            state.code = generateCode(
+            syncCodeToEditor(
               state.eventName,
               state.enabledProperties,
               state.propertyValues,
@@ -489,8 +490,7 @@ export const useSoundEventStore = create<SoundEventState>()(
           set(
             produce((state: SoundEventState) => {
               if (state.lang === lang) {
-                state.syncOrigin = 'controls';
-                state.code = generateCode(
+                syncCodeToEditor(
                   state.eventName,
                   state.enabledProperties,
                   state.propertyValues,
@@ -509,71 +509,73 @@ export const useSoundEventStore = create<SoundEventState>()(
         set({ theme });
       },
 
-      setEditorDrawerOpen: (open) => set({ isEditorDrawerOpen: open }),
+      syncFromValidatedDocument: (document, normalizedProps) => {
+        const { eventName, enabledProperties, propertyValues, customProperties } = get();
 
-      updateCodeFromEditor: (newCode) =>
+        const newEventName = document.eventName;
+        const newCustom = document.customProperties ?? {};
+        const newEnabled = new Set<string>();
+        const newValues: Record<string, any> = {};
+
+        const sourceProps = normalizedProps ?? document.properties;
+        for (const [k, v] of Object.entries(sourceProps)) {
+          if (SPECS[k]) {
+            newEnabled.add(k);
+            newValues[k] = v;
+          }
+        }
+
+        normalizeDependencies(newEnabled, newValues);
+
+        // Structural Diffing: avoid set() and re-renders if configuration did not change
+        const isEventNameSame = eventName === newEventName;
+        const isEnabledSame =
+          enabledProperties.size === newEnabled.size &&
+          Array.from(newEnabled).every((k) => enabledProperties.has(k));
+        const areValuesSame =
+          isEnabledSame &&
+          Array.from(newEnabled).every(
+            (k) => JSON.stringify(propertyValues[k]) === JSON.stringify(newValues[k])
+          );
+        const areCustomSame =
+          Object.keys(newCustom).length === Object.keys(customProperties).length &&
+          Object.keys(newCustom).every(
+            (k) => JSON.stringify(newCustom[k]) === JSON.stringify(customProperties[k])
+          );
+
+        if (isEventNameSame && isEnabledSame && areValuesSame && areCustomSame) {
+          return;
+        }
+
         set(
           produce((state: SoundEventState) => {
-            state.code = newCode;
-            state.syncOrigin = 'editor';
-
-            // Step 1: KV3 Syntax parsing
-            const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(newCode);
-            if (syntaxDiagnostics.length > 0 || !document) {
-              state.diagnostics = syntaxDiagnostics;
-              state.fieldErrors = {};
-              for (const d of syntaxDiagnostics) {
-                if (d.propertyKey) {
-                  state.fieldErrors[d.propertyKey] = d.code;
-                }
-              }
-              return;
-            }
-
-            // Step 2: Business validation against SPECS & Dependencies
-            const validation = validateSoundEventDocument(document);
-            if (!validation.isValid) {
-              state.diagnostics = validation.diagnostics;
-              state.fieldErrors = validation.fieldErrors;
-              return;
-            }
-
-            // Step 3: Clear diagnostics & sync valid data to store
-            state.diagnostics = [];
-            state.fieldErrors = {};
-            state.eventName = document.eventName;
-            state.customProperties = document.customProperties ?? {};
-
-            state.enabledProperties.clear();
-            const normProps = validation.normalizedProperties ?? document.properties;
-            for (const [k, v] of Object.entries(normProps)) {
-              if (SPECS[k]) {
-                state.enabledProperties.add(k);
-                state.propertyValues[k] = v;
-              }
-            }
-
-            normalizeDependencies(state.enabledProperties, state.propertyValues);
+            state.eventName = newEventName;
+            state.enabledProperties = newEnabled;
+            state.propertyValues = newValues;
+            state.customProperties = newCustom;
           })
-        ),
+        );
+      },
 
       formatCurrentCode: () => {
-        const { code, eventName, enabledProperties, propertyValues, customProperties, includeComments } = get();
+        const editorCode = useEditorStore.getState().code;
+
         // Step 1: Syntax parsing
-        const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(code);
+        const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(editorCode);
         if (!document || syntaxDiagnostics.length > 0) {
-          set({ diagnostics: syntaxDiagnostics });
+          useEditorStore.getState().setDiagnostics(syntaxDiagnostics);
           return false;
         }
 
         // Step 2: Business validation
         const validation = validateSoundEventDocument(document);
         if (!validation.isValid) {
-          set({ diagnostics: validation.diagnostics, fieldErrors: validation.fieldErrors });
+          useEditorStore.getState().setDiagnostics(validation.diagnostics, validation.fieldErrors);
           return false;
         }
 
         // Step 3: Serialization
+        const { eventName, enabledProperties, propertyValues, customProperties, includeComments } = get();
         try {
           const formatted = generateCode(
             eventName,
@@ -582,7 +584,7 @@ export const useSoundEventStore = create<SoundEventState>()(
             customProperties,
             includeComments
           );
-          set({ code: formatted, diagnostics: [], fieldErrors: {}, syncOrigin: 'controls' });
+          useEditorStore.getState().setCodeFromControls(formatted);
           return true;
         } catch {
           return false;
@@ -590,6 +592,21 @@ export const useSoundEventStore = create<SoundEventState>()(
       },
 
       exportShareHash: () => {
+        const editorCode = useEditorStore.getState().code;
+
+        // Pre-validation: reject share hash generation if code has syntax or validation errors
+        const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(editorCode);
+        if (!document || syntaxDiagnostics.length > 0) {
+          useEditorStore.getState().setDiagnostics(syntaxDiagnostics);
+          return null;
+        }
+
+        const validation = validateSoundEventDocument(document);
+        if (!validation.isValid) {
+          useEditorStore.getState().setDiagnostics(validation.diagnostics, validation.fieldErrors);
+          return null;
+        }
+
         const { eventName, enabledProperties, propertyValues, customProperties } = get();
         const activeProps: Record<string, any> = { ...customProperties };
         for (const k of enabledProperties) {
@@ -642,10 +659,7 @@ export const useSoundEventStore = create<SoundEventState>()(
               }
 
               normalizeDependencies(state.enabledProperties, state.propertyValues);
-              state.diagnostics = [];
-              state.fieldErrors = {};
-              state.syncOrigin = 'controls';
-              state.code = generateCode(
+              syncCodeToEditor(
                 state.eventName,
                 state.enabledProperties,
                 state.propertyValues,
@@ -663,6 +677,7 @@ export const useSoundEventStore = create<SoundEventState>()(
     }),
     {
       name: 'cs2_soundevent_generator_store_v2',
+      storage: createJSONStorage(() => createDebouncedStorage(800)),
       partialize: (state) => ({
         eventName: state.eventName,
         selectedPresetId: state.selectedPresetId,
@@ -696,10 +711,12 @@ export const useSoundEventStore = create<SoundEventState>()(
           }
         }
 
-        const rawEventName = typeof persistedState.eventName === 'string' ? persistedState.eventName.trim() : '';
-        const safeEventName = rawEventName && !/[\r\n\x00-\x1f]/.test(rawEventName)
-          ? rawEventName.slice(0, 128)
-          : currentState.eventName;
+        const rawEventName =
+          typeof persistedState.eventName === 'string' ? persistedState.eventName.trim() : '';
+        const safeEventName =
+          rawEventName && !/[\r\n\x00-\x1f]/.test(rawEventName)
+            ? rawEventName.slice(0, 128)
+            : currentState.eventName;
         const selectedPresetId =
           typeof persistedState.selectedPresetId === 'string' && PRESETS[persistedState.selectedPresetId]
             ? persistedState.selectedPresetId
@@ -710,20 +727,19 @@ export const useSoundEventStore = create<SoundEventState>()(
 
         normalizeDependencies(enabled, values);
         const code = generateCode(safeEventName, enabled, values, custom, includeComments);
+        useEditorStore.getState().setCodeFromControls(code, 'init');
 
         if (lang === 'en') {
           loadLanguage('en').then(() => {
             const state = useSoundEventStore.getState();
             if (state.lang === 'en') {
-              useSoundEventStore.setState({
-                code: generateCode(
-                  state.eventName,
-                  state.enabledProperties,
-                  state.propertyValues,
-                  state.customProperties,
-                  state.includeComments
-                ),
-              });
+              syncCodeToEditor(
+                state.eventName,
+                state.enabledProperties,
+                state.propertyValues,
+                state.customProperties,
+                state.includeComments
+              );
             }
           });
         } else {
@@ -745,9 +761,12 @@ export const useSoundEventStore = create<SoundEventState>()(
           includeComments,
           lang,
           theme,
-          code,
         };
       },
     }
   )
 );
+
+registerDocumentSyncHandler((doc, normProps) => {
+  useSoundEventStore.getState().syncFromValidatedDocument(doc, normProps);
+});

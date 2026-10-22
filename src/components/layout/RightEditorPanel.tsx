@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { Kv3CodeMirror } from '@/components/editor/Kv3CodeMirror';
 import { toast } from 'sonner';
 import { Copy, Zap, Lightbulb, X, Share2 } from 'lucide-react';
@@ -13,15 +14,16 @@ const HowToUseModal = React.lazy(() =>
 export const RightEditorPanel: React.FC = () => {
   const { t } = useTranslation();
   const lang = useSoundEventStore((s) => s.lang);
-  const code = useSoundEventStore((s) => s.code);
-  const diagnostics = useSoundEventStore((s) => s.diagnostics);
   const includeComments = useSoundEventStore((s) => s.includeComments);
   const setIncludeComments = useSoundEventStore((s) => s.setIncludeComments);
-  const updateCodeFromEditor = useSoundEventStore((s) => s.updateCodeFromEditor);
   const formatCurrentCode = useSoundEventStore((s) => s.formatCurrentCode);
   const exportShareHash = useSoundEventStore((s) => s.exportShareHash);
-  const isDrawerOpen = useSoundEventStore((s) => s.isEditorDrawerOpen);
-  const setDrawerOpen = useSoundEventStore((s) => s.setEditorDrawerOpen);
+
+  const code = useEditorStore((s) => s.code);
+  const diagnostics = useEditorStore((s) => s.diagnostics);
+  const updateCodeFromEditor = useEditorStore((s) => s.updateCodeFromEditor);
+  const isDrawerOpen = useEditorStore((s) => s.isEditorDrawerOpen);
+  const setDrawerOpen = useEditorStore((s) => s.setEditorDrawerOpen);
 
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
@@ -99,6 +101,10 @@ export const RightEditorPanel: React.FC = () => {
 
   const handleShare = async () => {
     const hash = exportShareHash();
+    if (!hash) {
+      toast.error(t('ui.shareErrorInvalid'));
+      return;
+    }
     const shareUrl = `${window.location.origin}${window.location.pathname}#s=${hash}`;
     const ok = await copyToClipboard(shareUrl);
     if (ok) {

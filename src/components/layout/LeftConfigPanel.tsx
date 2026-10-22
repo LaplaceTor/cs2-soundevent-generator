@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect, useLayoutEffect, useCallba
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { GROUPS, SPECS, typeNeedsValue } from '@/domain/schema/specs';
 import { PRESETS } from '@/domain/schema/presets';
 import { PropertyGroupAccordion } from '@/components/properties/PropertyGroupAccordion';
@@ -13,16 +14,17 @@ export const LeftConfigPanel: React.FC = () => {
   const applyPreset = useSoundEventStore((s) => s.applyPreset);
   const eventName = useSoundEventStore((s) => s.eventName);
   const setEventName = useSoundEventStore((s) => s.setEventName);
-  const searchQuery = useSoundEventStore((s) => s.searchQuery);
-  const setSearchQuery = useSoundEventStore((s) => s.setSearchQuery);
-  const filterActiveOnly = useSoundEventStore((s) => s.filterActiveOnly);
-  const setFilterActiveOnly = useSoundEventStore((s) => s.setFilterActiveOnly);
-  const expandAllGroups = useSoundEventStore((s) => s.expandAllGroups);
-  const collapseAllGroups = useSoundEventStore((s) => s.collapseAllGroups);
   const enabledProperties = useSoundEventStore((s) => s.enabledProperties);
   const curType = useSoundEventStore((s) => s.propertyValues.type);
   const lang = useSoundEventStore((s) => s.lang);
   const selectedPresetId = useSoundEventStore((s) => s.selectedPresetId);
+
+  const searchQuery = useEditorStore((s) => s.searchQuery);
+  const setSearchQuery = useEditorStore((s) => s.setSearchQuery);
+  const filterActiveOnly = useEditorStore((s) => s.filterActiveOnly);
+  const setFilterActiveOnly = useEditorStore((s) => s.setFilterActiveOnly);
+  const expandAllGroups = useEditorStore((s) => s.expandAllGroups);
+  const collapseAllGroups = useEditorStore((s) => s.collapseAllGroups);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== 'undefined' ? window.innerHeight : 800

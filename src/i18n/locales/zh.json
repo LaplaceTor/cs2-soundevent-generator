@@ -45,7 +45,8 @@
     "shareUrlFailed": "解析分享链接失败，已重置为默认配置",
     "basePlaceholder": "例如 Base.Event 或 Weapon_Base",
     "copyCodeFailed": "复制到剪贴板失败",
-    "copyShareFailed": "复制分享链接失败"
+    "copyShareFailed": "复制分享链接失败",
+    "shareErrorInvalid": "当前代码存在语法或属性校验错误，无法生成分享链接"
   },
   "badges": {
     "linked": "关联属性: {{partner}}",
@@ -599,6 +600,7 @@
     "UNSUPPORTED_PROPERTY_VALUE": "第 {{line}} 行: 属性 \"{{key}}\" 的值 \"{{actual}}\" 不受支持，允许的值为: {{allowed}}",
     "INVALID_MIN_MAX_PAIR": "第 {{line}} 行: \"{{minKey}}\" ({{minVal}}) 不能大于 \"{{maxKey}}\" ({{maxVal}})",
     "CHILD_MISSING_PARENT": "第 {{line}} 行: 启用子属性 \"{{child}}\" 时必须同时启用父开关 \"{{parent}}\"",
-    "MISSING_REQUIRED_PROPERTY": "第 {{line}} 行: 缺少必需的属性 \"{{key}}\""
+    "MISSING_REQUIRED_PROPERTY": "第 {{line}} 行: 缺少必需的属性 \"{{key}}\"",
+    "UNQUOTED_VALUE": "第 {{line}} 行: 属性 \"{{key}}\" 的值不能使用未加引号的标识符，字符串必须用双引号包裹，数值或布尔值必须符合字面量格式"
   }
 }

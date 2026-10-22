@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { SPECS, DEFAULTS } from '@/domain/schema/specs';
 import { MIN_MAX_MAP, TOGGLE_DEPENDENTS, CHILD_TO_PARENT_MAP } from '@/domain/schema/dependencies';
 import { FloatSliderControl } from './controls/FloatSliderControl';
@@ -21,7 +22,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
   const spec = SPECS[propKey];
   const isEnabled = useSoundEventStore((s) => s.enabledProperties.has(propKey));
   const rawValue = useSoundEventStore((s) => s.propertyValues[propKey]);
-  const fieldDiagnostic = useSoundEventStore((s) =>
+  const fieldDiagnostic = useEditorStore((s) =>
     s.diagnostics.find((d) => d.propertyKey === propKey || d.params?.key === propKey)
   );
   const setPropertyEnabled = useSoundEventStore((s) => s.setPropertyEnabled);

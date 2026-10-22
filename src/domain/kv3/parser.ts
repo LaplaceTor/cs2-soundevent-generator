@@ -71,7 +71,7 @@ export function parseKv3SoundEventDocument(input: string): {
   const customProperties: Record<string, any> = {};
   const propertyLocations: Record<string, PropertyLocation> = {};
 
-  function parseValue(): Kv3Value | undefined {
+  function parseValue(currentKey?: string): Kv3Value | undefined {
     const t = peek();
     if (!t) return undefined;
 
@@ -96,8 +96,17 @@ export function parseKv3SoundEventDocument(input: string): {
       if (tokens[cur + 1]?.type === 'EQUALS') {
         return undefined;
       }
+      // In KeyValues3, values cannot be bare/unquoted identifiers
+      diagnostics.push({
+        code: 'UNQUOTED_VALUE',
+        line: t.line,
+        column: t.column,
+        params: { key: currentKey || t.value, actual: t.value },
+        propertyKey: currentKey,
+        stage: 'syntax',
+      });
       advance();
-      return t.value;
+      return undefined;
     }
 
     // Array [ ... ]
@@ -124,7 +133,7 @@ export function parseKv3SoundEventDocument(input: string): {
           continue;
         }
 
-        const el = parseValue();
+        const el = parseValue(currentKey);
         if (el !== undefined) {
           elements.push(el);
           expectComma = true;
@@ -206,9 +215,12 @@ export function parseKv3SoundEventDocument(input: string): {
     const valLine = valToken ? valToken.line : keyToken.line;
     const valColumn = valToken ? valToken.column : keyToken.column;
 
-    const val = parseValue();
+    const prevDiagCount = diagnostics.length;
+    const val = parseValue(key);
     if (val === undefined) {
-      diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key }, propertyKey: key, stage: 'syntax' });
+      if (diagnostics.length === prevDiagCount) {
+        diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key }, propertyKey: key, stage: 'syntax' });
+      }
       continue;
     }
 

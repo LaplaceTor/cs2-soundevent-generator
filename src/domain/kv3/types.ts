@@ -28,7 +28,8 @@ export type Kv3DiagnosticCode =
   | 'UNSUPPORTED_PROPERTY_VALUE'
   | 'INVALID_MIN_MAX_PAIR'
   | 'CHILD_MISSING_PARENT'
-  | 'MISSING_REQUIRED_PROPERTY';
+  | 'MISSING_REQUIRED_PROPERTY'
+  | 'UNQUOTED_VALUE';
 
 export interface Kv3Diagnostic {
   code: Kv3DiagnosticCode;

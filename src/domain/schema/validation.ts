@@ -97,14 +97,9 @@ export function validateSingleProperty(
 
   const kind = spec.kind;
 
-  // 1. Float property
+  // 1. Float property (Strictly finite number, no strings)
   if (kind === 'float') {
-    let numVal: number;
-    if (typeof val === 'number') {
-      numVal = val;
-    } else if (typeof val === 'string' && val.trim() !== '') {
-      numVal = Number(val);
-    } else {
+    if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) {
       return {
         isValid: false,
         diagnostic: {
@@ -118,28 +113,14 @@ export function validateSingleProperty(
       };
     }
 
-    if (isNaN(numVal) || !isFinite(numVal)) {
-      return {
-        isValid: false,
-        diagnostic: {
-          code: 'INVALID_PROPERTY_NUMBER',
-          line,
-          column,
-          params: { key, actual: String(val) },
-          propertyKey: key,
-          stage: 'validation',
-        },
-      };
-    }
-
-    if (spec.options?.only_positive && numVal < 0) {
+    if (spec.options?.only_positive && val < 0) {
       return {
         isValid: false,
         diagnostic: {
           code: 'VALUE_OUT_OF_RANGE',
           line,
           column,
-          params: { key, range: '>= 0', actual: numVal },
+          params: { key, range: '>= 0', actual: val },
           propertyKey: key,
           stage: 'validation',
         },
@@ -149,10 +130,9 @@ export function validateSingleProperty(
     return { isValid: true };
   }
 
-  // 2. Bool and String Bool
+  // 2. Bool and String Bool (Strict boolean only, no strings)
   if (kind === 'bool' || kind === 'string_bool') {
-    const isBool = typeof val === 'boolean' || val === 'true' || val === 'false';
-    if (!isBool) {
+    if (typeof val !== 'boolean') {
       return {
         isValid: false,
         diagnostic: {
@@ -168,10 +148,15 @@ export function validateSingleProperty(
     return { isValid: true };
   }
 
-  // 3. Float Bool (1.0 / 0.0)
+  // 3. Float Bool (Strictly 1.0 / 0.0 or boolean, no strings)
   if (kind === 'float_bool') {
-    const validValues = [1.0, 0.0, 1, 0, '1.0', '0.0', '1', '0', true, false, 'true', 'false'];
-    if (!validValues.includes(val)) {
+    const isFloatBool =
+      val === 1.0 ||
+      val === 0.0 ||
+      val === 1 ||
+      val === 0 ||
+      typeof val === 'boolean';
+    if (!isFloatBool) {
       return {
         isValid: false,
         diagnostic: {
@@ -187,10 +172,12 @@ export function validateSingleProperty(
     return { isValid: true };
   }
 
-  // 4. Int Bool (1 / 0)
+  // 4. Int Bool (Strictly integer 1 or 0 or boolean, no strings or fractional floats)
   if (kind === 'int_bool') {
-    const validValues = [1, 0, '1', '0', true, false, 'true', 'false'];
-    if (!validValues.includes(val)) {
+    const isIntBool =
+      (typeof val === 'number' && Number.isInteger(val) && (val === 1 || val === 0)) ||
+      typeof val === 'boolean';
+    if (!isIntBool) {
       return {
         isValid: false,
         diagnostic: {

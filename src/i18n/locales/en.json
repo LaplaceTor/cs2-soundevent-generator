@@ -45,7 +45,8 @@
     "shareUrlFailed": "Failed to parse share URL, fallback to default",
     "basePlaceholder": "e.g. Base.Event or Weapon_Base",
     "copyCodeFailed": "Failed to copy code to clipboard",
-    "copyShareFailed": "Failed to copy share URL to clipboard"
+    "copyShareFailed": "Failed to copy share URL to clipboard",
+    "shareErrorInvalid": "Cannot generate share link: please fix syntax or validation errors first"
   },
   "badges": {
     "linked": "Linked: {{partner}}",
@@ -599,6 +600,7 @@
     "UNSUPPORTED_PROPERTY_VALUE": "Line {{line}}: Unsupported value \"{{actual}}\" for property \"{{key}}\", allowed: {{allowed}}",
     "INVALID_MIN_MAX_PAIR": "Line {{line}}: \"{{minKey}}\" ({{minVal}}) cannot exceed \"{{maxKey}}\" ({{maxVal}})",
     "CHILD_MISSING_PARENT": "Line {{line}}: Child property \"{{child}}\" requires parent toggle \"{{parent}}\" to be enabled",
-    "MISSING_REQUIRED_PROPERTY": "Line {{line}}: Missing required property \"{{key}}\""
+    "MISSING_REQUIRED_PROPERTY": "Line {{line}}: Missing required property \"{{key}}\"",
+    "UNQUOTED_VALUE": "Line {{line}}: Value for property \"{{key}}\" cannot be an unquoted identifier; strings must be in quotes and numbers must follow literal format"
   }
 }

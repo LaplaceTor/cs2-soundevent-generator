@@ -252,8 +252,8 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
       continue;
     }
 
-    // Check for number (supports -1.0, 1.25, 100, 1e-4)
-    if (/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(word)) {
+    // Check for strict number format (e.g. 100, -1.0, 1.25, 1e-4)
+    if (/^[+-]?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(word)) {
       tokens.push({ type: 'NUMBER', value: word, line: startLine, column: startCol });
       continue;
     }
@@ -265,6 +265,17 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
         line: startLine,
         column: startCol,
       });
+    }
+
+    // Malformed number check (starts with digit or sign, or trailing/leading dot: 12abc, 1., .5, --1)
+    if (/^[+-]?\d/.test(word) || /^[+-]\.?\d/.test(word) || /^\d+\.$/.test(word) || /^\.\d+$/.test(word)) {
+      diagnostics.push({
+        code: 'INVALID_NUMBER',
+        line: startLine,
+        column: startCol,
+      });
+      tokens.push({ type: 'NUMBER', value: word, line: startLine, column: startCol });
+      continue;
     }
 
     if (/\b\d+(\.\d+){2,}\b/.test(word)) {

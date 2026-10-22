@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import type { GroupId } from '@/domain/schema/specs';
 import { PropertyRow } from './PropertyRow';
 
@@ -13,8 +14,8 @@ interface PropertyGroupAccordionProps {
 export const PropertyGroupAccordion = React.memo<PropertyGroupAccordionProps>(
   ({ groupId, groupIndex, propKeys }) => {
     const { t } = useTranslation();
-    const isExpanded = useSoundEventStore((s) => s.expandedGroups.has(groupId));
-    const toggleGroupExpanded = useSoundEventStore((s) => s.toggleGroupExpanded);
+    const isExpanded = useEditorStore((s) => s.expandedGroups.has(groupId));
+    const toggleGroupExpanded = useEditorStore((s) => s.toggleGroupExpanded);
     const activeCount = useSoundEventStore((s) => {
       let count = 0;
       for (const k of propKeys) {
