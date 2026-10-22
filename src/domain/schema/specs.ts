@@ -322,7 +322,7 @@ export const SPECS: Record<string, PropertySpec> = {
   randomize_position_min_radius: {
     kind: 'float',
     group: 'position',
-    options: { slider_range: [-5000.0, 5000.0], only_positive: false },
+    options: { slider_range: [0.0, 10000.0], only_positive: true },
   },
   randomize_position_max_radius: {
     kind: 'float',
