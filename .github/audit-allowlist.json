@@ -1,0 +1,4 @@
+{
+  "$comment": "Accepted dependency vulnerabilities. Each entry: { id: GHSA id, package, reason, expires: YYYY-MM-DD }. Expired entries block CI again.",
+  "entries": []
+}

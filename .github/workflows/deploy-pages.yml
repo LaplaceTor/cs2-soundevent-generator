@@ -16,7 +16,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  audit:
+    name: Security audit
+    uses: ./.github/workflows/security-audit.yml
+    # Called jobs cannot exceed these; issues/pull-requests are only used on schedule/PR events.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
   build:
+    needs: audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

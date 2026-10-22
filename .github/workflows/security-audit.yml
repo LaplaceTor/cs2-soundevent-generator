@@ -1,0 +1,125 @@
+name: Security Audit
+
+# Dependency vulnerability scanning with a tiered blocking policy:
+#   - production deps: block on >= high
+#   - dev-only deps:   block on >= critical
+#   - lower severities are reported as warnings in the job summary
+# Exceptions: .github/audit-allowlist.json (GHSA id + reason + expiry date).
+#
+# Pushes to main are covered by deploy-pages.yml, which calls this workflow
+# via `workflow_call` and gates the deployment on it.
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 2 * * 1' # Mondays 02:00 UTC
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    name: npm audit (tiered policy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # only used by the scheduled tracking-issue step
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run npm audit
+        # npm audit exits non-zero when it finds anything; the policy step decides what blocks.
+        run: |
+          npm audit --omit=dev --json > audit-prod.json || true
+          npm audit --json > audit-all.json || true
+
+      - name: Apply vulnerability policy
+        id: policy
+        run: node .github/scripts/audit-policy.mjs --prod audit-prod.json --all audit-all.json --report audit-report.md
+
+      - name: Update tracking issue
+        if: always() && github.event_name == 'schedule' && steps.policy.outcome != 'skipped'
+        uses: actions/github-script@v7
+        env:
+          POLICY_OUTCOME: ${{ steps.policy.outcome }}
+        with:
+          script: |
+            const fs = require('fs');
+            const title = 'Dependency vulnerability audit: blocking findings';
+            const label = 'security';
+            const failed = process.env.POLICY_OUTCOME === 'failure';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const report = fs.existsSync('audit-report.md')
+              ? fs.readFileSync('audit-report.md', 'utf8')
+              : '_The policy script failed before producing a report; see the workflow logs._';
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', labels: label, per_page: 100,
+            });
+            const existing = issues.find((i) => i.title === title);
+
+            if (failed) {
+              const body = `Scheduled audit on \`${context.ref}\` found blocking vulnerabilities.\n\nRun: ${runUrl}\n\n${report}`;
+              if (existing) {
+                await github.rest.issues.update({ ...context.repo, issue_number: existing.number, body });
+                core.info(`Updated issue #${existing.number}`);
+              } else {
+                try {
+                  await github.rest.issues.getLabel({ ...context.repo, name: label });
+                } catch {
+                  await github.rest.issues.createLabel({ ...context.repo, name: label, color: 'b60205' });
+                }
+                const { data } = await github.rest.issues.create({ ...context.repo, title, body, labels: [label] });
+                core.info(`Opened issue #${data.number}`);
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: existing.number,
+                body: `✅ Scheduled audit is clean again (${runUrl}). Closing.`,
+              });
+              await github.rest.issues.update({ ...context.repo, issue_number: existing.number, state: 'closed' });
+              core.info(`Closed issue #${existing.number}`);
+            }
+
+  dependency-review:
+    name: Dependency review (new deps)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # PR summary comment
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load allowlist
+        id: allowlist
+        run: node .github/scripts/audit-policy.mjs --allow-ghsas
+
+      - name: Review runtime dependencies (block >= high)
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime
+          allow-ghsas: ${{ steps.allowlist.outputs.ghsas }}
+          comment-summary-in-pr: always
+
+      - name: Review development dependencies (block >= critical)
+        if: always()
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: critical
+          fail-on-scopes: development
+          allow-ghsas: ${{ steps.allowlist.outputs.ghsas }}
