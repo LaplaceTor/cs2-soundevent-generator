@@ -195,8 +195,8 @@ export function parseKv3SoundEventDocument(input: string): {
     if (spec) {
       if (spec.kind === 'float_bool' || spec.kind === 'int_bool') {
         properties[key] = typeof val === 'number' ? val > 0 : Boolean(val);
-      } else if (spec.kind === 'string_bool') {
-        properties[key] = String(val) === 'true';
+      } else if (spec.kind === 'bool' || spec.kind === 'string_bool') {
+        properties[key] = typeof val === 'string' ? (val === 'true' || val === '1') : Boolean(val);
       } else {
         properties[key] = val;
       }

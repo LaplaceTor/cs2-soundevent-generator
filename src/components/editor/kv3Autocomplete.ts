@@ -40,10 +40,8 @@ function kv3Completions(context: CompletionContext): CompletionResult | null {
       });
     } else {
       const spec = SPECS[keyPart];
-      if (spec?.kind === 'bool') {
+      if (spec?.kind === 'bool' || spec?.kind === 'string_bool') {
         options.push({ label: 'true', type: 'atom' }, { label: 'false', type: 'atom' });
-      } else if (spec?.kind === 'string_bool') {
-        options.push({ label: '"true"', type: 'atom' }, { label: '"false"', type: 'atom' });
       } else if (spec?.kind === 'float_bool') {
         options.push({ label: '1.0', type: 'number' }, { label: '0.0', type: 'number' });
       } else if (spec?.kind === 'int_bool') {
@@ -72,8 +70,7 @@ function kv3Completions(context: CompletionContext): CompletionResult | null {
     const label = String(i18n.t(`labels.${key}`) || key);
     let insertText = `${key} = `;
     if (spec.kind === 'float') insertText += '1.0';
-    else if (spec.kind === 'bool') insertText += 'true';
-    else if (spec.kind === 'string_bool') insertText += '"true"';
+    else if (spec.kind === 'bool' || spec.kind === 'string_bool') insertText += 'true';
     else if (spec.kind === 'files') insertText += '[\n\t\t"sounds/custom/new_sound.vsnd",\n\t]';
     else if (spec.kind === 'vector3') insertText += '[ 0.0, 0.0, 0.0 ]';
     else if (spec.kind === 'vsnd_weights') insertText += '[ 0.8, 0.2 ]';

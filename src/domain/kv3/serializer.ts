@@ -32,8 +32,9 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
     return `"${escapeKv3String(val)}"`;
   }
 
-  if (kind === 'string_bool') {
-    return typeof val === 'boolean' ? (val ? '"true"' : '"false"') : val ? `"${escapeKv3String(val)}"` : '"false"';
+  if (kind === 'bool' || kind === 'string_bool') {
+    const isTrue = val === true || val === 'true' || val === 1 || val === '1';
+    return isTrue ? 'true' : 'false';
   }
 
   if (kind === 'float_bool') {
@@ -44,10 +45,6 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   if (kind === 'int_bool') {
     const isTrue = val === true || val === 1 || val === 1.0 || val === '1' || val === 'true';
     return isTrue ? '1' : '0';
-  }
-
-  if (kind === 'bool') {
-    return Boolean(val) ? 'true' : 'false';
   }
 
   if (kind === 'float') {

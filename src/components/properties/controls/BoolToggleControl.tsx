@@ -23,16 +23,14 @@ export const BoolToggleControl: React.FC<BoolToggleControlProps> = ({
 
   const handleSetTrue = () => {
     let emitted: any = true;
-    if (kind === 'string_bool') emitted = 'true';
-    else if (kind === 'float_bool') emitted = 1.0;
+    if (kind === 'float_bool') emitted = 1.0;
     else if (kind === 'int_bool') emitted = 1;
     onChange(emitted);
   };
 
   const handleSetFalse = () => {
     let emitted: any = false;
-    if (kind === 'string_bool') emitted = 'false';
-    else if (kind === 'float_bool') emitted = 0.0;
+    if (kind === 'float_bool') emitted = 0.0;
     else if (kind === 'int_bool') emitted = 0;
     onChange(emitted);
   };
