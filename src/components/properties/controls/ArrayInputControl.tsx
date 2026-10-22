@@ -31,7 +31,7 @@ export const ArrayInputControl: React.FC<ArrayInputControlProps> = ({
       onChange={handleChange}
       placeholder={isNum ? '0.0, 2.0, 4.0' : '"meta", "localplayeronly"'}
       aria-label={kind}
-      className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400"
+      className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
     />
   );
 };

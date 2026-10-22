@@ -25,7 +25,7 @@ export const VectorControl: React.FC<VectorControlProps> = ({
       {axes.map((axis, idx) => (
         <div
           key={idx}
-          className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 dark:border-gray-800 rounded"
+          className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 dark:border-gray-800 rounded-sm"
         >
           <span className="text-[10px] font-mono text-gray-400">{axis}</span>
           <input
@@ -34,7 +34,7 @@ export const VectorControl: React.FC<VectorControlProps> = ({
             value={vec[idx] ?? 0}
             aria-label={axis}
             onChange={(e) => handleChange(idx, parseFloat(e.target.value) || 0)}
-            className="w-full font-mono text-xs bg-transparent outline-none text-right"
+            className="w-full font-mono text-xs bg-transparent outline-hidden text-right"
           />
         </div>
       ))}

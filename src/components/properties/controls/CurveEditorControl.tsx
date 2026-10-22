@@ -117,7 +117,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
   };
 
   return (
-    <div className="space-y-2 border border-gray-200 dark:border-gray-800 p-2.5 rounded">
+    <div className="space-y-2 border border-gray-200 dark:border-gray-800 p-2.5 rounded-sm">
       {/* Presets Toolbar */}
       <div className="flex items-center justify-between gap-1 flex-wrap">
         <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">
@@ -127,35 +127,35 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
           <button
             type="button"
             onClick={() => handleApplyPreset('linear')}
-            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded cursor-pointer"
+            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm cursor-pointer"
           >
             {t('curveEditor.presetLinear')}
           </button>
           <button
             type="button"
             onClick={() => handleApplyPreset('smooth')}
-            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded cursor-pointer"
+            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm cursor-pointer"
           >
             {t('curveEditor.presetSmooth')}
           </button>
           <button
             type="button"
             onClick={() => handleApplyPreset('fade_in')}
-            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded cursor-pointer"
+            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm cursor-pointer"
           >
             {t('curveEditor.presetFadeIn')}
           </button>
           <button
             type="button"
             onClick={() => handleApplyPreset('fade_out')}
-            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded cursor-pointer"
+            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm cursor-pointer"
           >
             {t('curveEditor.presetFadeOut')}
           </button>
           <button
             type="button"
             onClick={() => handleApplyPreset('flat')}
-            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded cursor-pointer"
+            className="px-1.5 py-0.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm cursor-pointer"
           >
             {t('curveEditor.presetFlat')}
           </button>
@@ -163,7 +163,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       </div>
 
       {/* Canvas Wrap */}
-      <div className="relative w-full h-36 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-950 overflow-hidden">
+      <div className="relative w-full h-36 border border-gray-200 dark:border-gray-800 rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
         <canvas ref={canvasRef} className="w-full h-full block touch-none select-none" />
       </div>
 
@@ -182,7 +182,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="max-h-40 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded">
+      <div className="max-h-40 overflow-y-auto overflow-x-hidden border border-gray-200 dark:border-gray-800 rounded-sm">
         <table className="curve-table w-full table-fixed">
           <thead>
             <tr>
@@ -274,7 +274,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
                     onClick={() => handleDeletePoint(pIdx)}
                     aria-label={`Delete point ${pIdx + 1}`}
                     title={t('curveEditor.delPoint')}
-                    className="w-5 h-5 mx-auto flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold cursor-pointer rounded transition-colors active:scale-95 text-xs"
+                    className="w-5 h-5 mx-auto flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold cursor-pointer rounded-sm transition-colors active:scale-95 text-xs"
                   >
                     ✕
                   </button>
@@ -289,7 +289,7 @@ export const CurveEditorControl: React.FC<CurveEditorControlProps> = ({
       <button
         type="button"
         onClick={handleAddPoint}
-        className="mt-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
+        className="mt-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
       >
         {t('curveEditor.addPoint')}
       </button>

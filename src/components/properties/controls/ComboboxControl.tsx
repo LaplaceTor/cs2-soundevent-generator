@@ -32,7 +32,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
         value={value || (options[0] ?? '')}
         aria-label={propKey}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer font-medium"
+        className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer font-medium"
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>
@@ -54,7 +54,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
         value={value || ''}
         aria-label={`${propKey} select`}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer"
+        className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer"
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>
@@ -68,7 +68,7 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
         aria-label={`${propKey} custom input`}
         placeholder={t('ui.orFreeInput')}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400"
+        className="flex-1 px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
       />
     </div>
   );

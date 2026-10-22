@@ -50,7 +50,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
   };
 
   return (
-    <div className="space-y-2 border border-gray-200 dark:border-gray-800 p-2.5 rounded">
+    <div className="space-y-2 border border-gray-200 dark:border-gray-800 p-2.5 rounded-sm">
       {/* Header Info */}
       <div className="flex items-center justify-between gap-1 text-[10px] text-gray-500 dark:text-gray-400 font-mono uppercase tracking-wider">
         <span>{t('weightsEditor.title')}</span>
@@ -58,7 +58,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="max-h-48 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+      <div className="max-h-48 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-sm">
         <table className="curve-table w-full min-w-[260px] table-fixed">
           <thead>
             <tr>
@@ -94,7 +94,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
                     <button
                       type="button"
                       onClick={() => handleDeleteWeight(idx)}
-                      className={`w-6 h-6 inline-flex items-center justify-center font-bold cursor-pointer transition-colors rounded ${
+                      className={`w-6 h-6 inline-flex items-center justify-center font-bold cursor-pointer transition-colors rounded-sm ${
                         weights.length <= 2
                           ? 'text-gray-300 dark:text-gray-700 hover:text-gray-400'
                           : 'text-gray-400 hover:text-red-500 active:scale-95'
@@ -117,7 +117,7 @@ export const VsndWeightsControl: React.FC<VsndWeightsControlProps> = ({
         <button
           type="button"
           onClick={handleAddWeight}
-          className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
+          className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm text-[11px] font-medium transition-colors cursor-pointer active:scale-98"
         >
           {t('weightsEditor.addWeight')}
         </button>

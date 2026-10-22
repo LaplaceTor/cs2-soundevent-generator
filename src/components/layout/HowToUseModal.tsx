@@ -135,7 +135,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
       aria-modal="true"
       aria-labelledby="how-to-use-modal-title"
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pl-[calc(0.75rem+env(safe-area-inset-left,0px))] pr-[calc(0.75rem+env(safe-area-inset-right,0px))] bg-black/60 backdrop-blur-sm transition-all duration-200 ease-out",
+        "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pl-[calc(0.75rem+env(safe-area-inset-left,0px))] pr-[calc(0.75rem+env(safe-area-inset-right,0px))] bg-black/60 backdrop-blur-xs transition-all duration-200 ease-out",
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}
       onClick={onClose}
@@ -144,7 +144,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         ref={modalRef}
         tabIndex={-1}
         className={clsx(
-          "relative w-full max-w-2xl max-h-[88vh] bg-white dark:bg-[#0E131F] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out outline-none",
+          "relative w-full max-w-2xl max-h-[88vh] bg-white dark:bg-[#0E131F] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ease-out outline-hidden",
           isVisible
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-2.5"
@@ -152,7 +152,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/50 flex-shrink-0">
+        <div className="px-5 py-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/70 dark:bg-gray-900/50 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-base" aria-hidden="true">💡</span>
             <h2 id="how-to-use-modal-title" className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide m-0">
@@ -197,7 +197,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
                         {ent.name}
                       </span>
                       <span
-                        className={`px-1.5 py-0.5 text-[9px] font-semibold rounded whitespace-nowrap flex-shrink-0 ${badgeColorClass(
+                        className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-sm whitespace-nowrap shrink-0 ${badgeColorClass(
                           ent.badgeColor
                         )}`}
                       >
@@ -233,11 +233,11 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Modal Footer */}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end bg-gray-50/50 dark:bg-gray-900/30 flex-shrink-0">
+        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end bg-gray-50/50 dark:bg-gray-900/30 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="py-1.5 px-4 bg-black text-white dark:bg-white dark:text-black rounded text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
+            className="py-1.5 px-4 bg-black text-white dark:bg-white dark:text-black rounded-sm text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
           >
             {t('guideModal.closeBtn')}
           </button>

@@ -22,7 +22,7 @@ export const TypeSelectControl: React.FC<TypeSelectControlProps> = ({
         value={curType}
         aria-label={t('labels.type')}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer font-medium"
+        className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer font-medium"
       >
         {TYPE_OBJECTS.map((tKey) => {
           const item = t(`types.${tKey}`, { returnObjects: true }) as any;
@@ -35,9 +35,9 @@ export const TypeSelectControl: React.FC<TypeSelectControlProps> = ({
       </select>
 
       {/* Usage Scenario Card */}
-      <div className="p-2.5 rounded border border-gray-200/80 dark:border-gray-800/80 bg-gray-50/70 dark:bg-gray-900/40 text-[11px] leading-relaxed">
+      <div className="p-2.5 rounded-sm border border-gray-200/80 dark:border-gray-800/80 bg-gray-50/70 dark:bg-gray-900/40 text-[11px] leading-relaxed">
         <div className="flex items-start gap-1.5">
-          <span className="inline-block px-1 py-0.2 text-[9px] font-semibold uppercase tracking-wider bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded whitespace-nowrap flex-shrink-0 mt-0.5">
+          <span className="inline-block px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-sm whitespace-nowrap shrink-0 mt-0.5">
             {t('ui.usageScenario')}
           </span>
           <span className="text-gray-600 dark:text-gray-300 font-sans">

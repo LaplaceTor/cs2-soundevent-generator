@@ -222,7 +222,7 @@ export const LeftConfigPanel: React.FC = () => {
   return (
     <section
       aria-label={t('ui.configuration')}
-      className="w-full lg:w-[380px] lg:flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full bg-white dark:bg-[#0B0F17] overflow-hidden"
+      className="w-full lg:w-[380px] lg:shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full bg-white dark:bg-[#0B0F17] overflow-hidden"
     >
       {/* Top Header Section with smooth morphing transition */}
       <div
@@ -230,7 +230,7 @@ export const LeftConfigPanel: React.FC = () => {
         onWheel={handleHeaderWheel}
         onTouchStart={handleHeaderTouchStart}
         onTouchMove={handleHeaderTouchMove}
-        className="flex-shrink-0 bg-white dark:bg-[#0B0F17] transition-all duration-300 ease-in-out border-b border-gray-200 dark:border-gray-800"
+        className="shrink-0 bg-white dark:bg-[#0B0F17] transition-all duration-300 ease-in-out border-b border-gray-200 dark:border-gray-800"
       >
         {/* Header Toolbar (Title) - smoothly rolls up in compact mode */}
         <div
@@ -255,7 +255,7 @@ export const LeftConfigPanel: React.FC = () => {
         <div
           className={clsx(
             "transition-all duration-300 ease-in-out",
-            isSimplified ? "p-2.5 space-y-2 shadow-sm" : "p-3.5 space-y-3"
+            isSimplified ? "p-2.5 space-y-2 shadow-xs" : "p-3.5 space-y-3"
           )}
         >
           {/* Section 1 / Row 1: Preset + Reset + Event Identifier */}
@@ -289,7 +289,7 @@ export const LeftConfigPanel: React.FC = () => {
                 value={selectedPresetId}
                 onChange={(e) => handlePresetChange(e.target.value)}
                 className={clsx(
-                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-medium text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white cursor-pointer transition-all duration-300 truncate",
+                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-medium text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer transition-all duration-300 truncate",
                   isSimplified ? "flex-1 px-2 py-1" : "flex-1 px-2.5 py-1.5"
                 )}
                 title={t('ui.presetLabel')}
@@ -307,13 +307,13 @@ export const LeftConfigPanel: React.FC = () => {
                 type="button"
                 onClick={handleReset}
                 className={clsx(
-                  "border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-medium text-xs text-gray-700 dark:text-gray-300 transition-all duration-300 flex-shrink-0 cursor-pointer inline-flex items-center justify-center",
+                  "border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-medium text-xs text-gray-700 dark:text-gray-300 transition-all duration-300 shrink-0 cursor-pointer inline-flex items-center justify-center",
                   isSimplified ? "p-1" : "py-1.5 px-2.5"
                 )}
                 title={t('ui.resetBtn')}
                 aria-label={t('ui.resetBtn')}
               >
-                <RotateCcw className="w-3.5 h-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+                <RotateCcw className="w-3.5 h-3.5 shrink-0 text-gray-500 dark:text-gray-400" />
                 <span
                   className={clsx(
                     "transition-all duration-300 overflow-hidden whitespace-nowrap inline-block",
@@ -348,7 +348,7 @@ export const LeftConfigPanel: React.FC = () => {
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 className={clsx(
-                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400 truncate",
+                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400 truncate",
                   isSimplified ? "basis-0 flex-1 px-2 py-1" : "basis-full w-full px-2.5 py-1.5"
                 )}
                 placeholder={t('ui.eventNamePlaceholder')}
@@ -382,7 +382,7 @@ export const LeftConfigPanel: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={clsx(
-                "w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400",
+                "w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400",
                 isSimplified ? "px-2.5 py-1" : "px-2.5 py-1.5"
               )}
               placeholder={t('ui.searchPlaceholder')}
@@ -406,7 +406,7 @@ export const LeftConfigPanel: React.FC = () => {
                 ref={tabsContainerRef}
                 role="tablist"
                 aria-label={t('ui.filterSearch')}
-                className="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-medium text-center"
+                className="grid grid-cols-2 p-0.5 border border-gray-200 dark:border-gray-800 rounded-sm text-[11px] font-medium text-center"
               >
                 <button
                   type="button"
@@ -414,7 +414,7 @@ export const LeftConfigPanel: React.FC = () => {
                   aria-selected={!filterActiveOnly}
                   onClick={() => setFilterActiveOnly(false)}
                   className={clsx(
-                    "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",
+                    "rounded-xs transition-all cursor-pointer truncate px-1 whitespace-nowrap",
                     isSimplified ? "py-0.5" : "py-1",
                     !filterActiveOnly
                       ? "text-black dark:text-white font-semibold"
@@ -430,7 +430,7 @@ export const LeftConfigPanel: React.FC = () => {
                   aria-selected={filterActiveOnly}
                   onClick={() => setFilterActiveOnly(true)}
                   className={clsx(
-                    "rounded-sm transition-all cursor-pointer truncate px-1 whitespace-nowrap",
+                    "rounded-xs transition-all cursor-pointer truncate px-1 whitespace-nowrap",
                     isSimplified ? "py-0.5" : "py-1",
                     filterActiveOnly
                       ? "text-black dark:text-white font-semibold"
@@ -448,7 +448,7 @@ export const LeftConfigPanel: React.FC = () => {
               ref={registerFlip('expandCollapse')}
               className={clsx(
                 "flex items-center text-[11px] text-gray-500 transition-all duration-300",
-                isSimplified ? "flex-shrink-0 gap-1" : "justify-end gap-1.5 pt-0.5"
+                isSimplified ? "shrink-0 gap-1" : "justify-end gap-1.5 pt-0.5"
               )}
             >
               <button
@@ -493,7 +493,7 @@ export const LeftConfigPanel: React.FC = () => {
       <div
         ref={measureFullTabsRef}
         aria-hidden="true"
-        className="absolute left-[-9999px] top-[-9999px] invisible pointer-events-none flex items-center p-0.5 border text-[11px] font-medium whitespace-nowrap"
+        className="absolute left-[-9999px] top-[-9999px] invisible pointer-events-none flex items-center p-0.5 border border-transparent text-[11px] font-medium whitespace-nowrap"
       >
         <span className="px-1">{t('ui.filterAll')}</span>
         <span className="px-1">{t('ui.filterActiveOnly')}</span>

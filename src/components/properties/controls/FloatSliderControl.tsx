@@ -103,7 +103,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
       />
       <input
         type="number"
-        className="w-20 px-2 py-0.5 font-mono text-xs bg-transparent border border-gray-200 dark:border-gray-800 rounded outline-none focus:border-black dark:focus:border-white text-right"
+        className="w-20 px-2 py-0.5 font-mono text-xs bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm outline-hidden focus:border-black dark:focus:border-white text-right"
         value={displayNum}
         step={step}
         min={onlyPositive ? '0' : undefined}

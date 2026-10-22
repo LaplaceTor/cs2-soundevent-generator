@@ -152,7 +152,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
             value={value !== undefined ? String(value) : ''}
             onChange={(e) => handleValueChange(e.target.value)}
             placeholder={propKey === 'base' ? t('ui.basePlaceholder') : ''}
-            className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-gray-400"
+            className="w-full px-2.5 py-1.5 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-colors placeholder:text-gray-400"
           />
         );
       case 'files':
@@ -165,7 +165,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
               handleValueChange(val.includes(',') ? val.split(',').map((s) => s.trim()) : val);
             }}
             placeholder="sounds/..."
-            className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400"
+            className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
           />
         );
       default:
@@ -174,7 +174,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
             type="text"
             value={value !== undefined ? value : ''}
             onChange={(e) => handleValueChange(e.target.value)}
-            className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded font-mono text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-black dark:focus:border-white placeholder:text-gray-400"
+            className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
           />
         );
     }
@@ -209,13 +209,13 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
                 {propKey}
               </span>
               {fieldDiagnostic && (
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 select-none animate-pulse">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 select-none animate-pulse">
                   ⚠ ERROR
                 </span>
               )}
               {pairInfo && (
                 <span
-                  className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
                   title={t('badges.linked', { partner: pairInfo.partner })}
                 >
                   ⇄ {pairInfo.role.toUpperCase()}
@@ -223,7 +223,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
               )}
               {linkedPartner && !pairInfo && (
                 <span
-                  className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
                   title={t('badges.linked', { partner: linkedPartner })}
                 >
                   ⇄ LINKED
@@ -231,7 +231,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
               )}
               {children && (
                 <span
-                  className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 select-none cursor-help"
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 select-none cursor-help"
                   title={t('badges.parentToggle')}
                 >
                   ↱ PARENT
@@ -239,7 +239,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
               )}
               {parentKey && (
                 <span
-                  className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/50 select-none cursor-help"
+                  className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/50 select-none cursor-help"
                   title={t('badges.childOf', { parent: parentKey })}
                 >
                   ↳ SUB
@@ -262,7 +262,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
         {renderControl()}
         {fieldErrorMsg && (
           <div className="mt-1.5 text-[11px] text-red-600 dark:text-red-400 font-mono flex items-start gap-1.5 break-words [overflow-wrap:anywhere] leading-snug">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-1 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1 animate-pulse" />
             <span>{fieldErrorMsg}</span>
           </div>
         )}

@@ -37,7 +37,7 @@ export const PropertyGroupAccordion = React.memo<PropertyGroupAccordionProps>(
             aria-expanded={isExpanded}
             aria-controls={`accordion-region-${groupId}`}
             onClick={() => toggleGroupExpanded(groupId)}
-            className="w-full text-left px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40 select-none transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-black dark:focus-visible:ring-white bg-transparent border-0"
+            className="w-full text-left px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40 select-none transition-colors focus:outline-hidden focus-visible:ring-1 focus-visible:ring-black dark:focus-visible:ring-white bg-transparent border-0"
           >
             <span className="flex items-center gap-2">
               <span
@@ -55,7 +55,7 @@ export const PropertyGroupAccordion = React.memo<PropertyGroupAccordionProps>(
             <span
               className={
                 activeCount > 0
-                  ? 'text-[10px] font-mono px-1.5 py-0.2 bg-black text-white dark:bg-white dark:text-black rounded-none'
+                  ? 'text-[10px] font-mono px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black rounded-none'
                   : 'text-[10px] font-mono text-gray-400'
               }
             >

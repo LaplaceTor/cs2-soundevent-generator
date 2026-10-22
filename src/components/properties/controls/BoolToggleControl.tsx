@@ -37,12 +37,12 @@ export const BoolToggleControl: React.FC<BoolToggleControlProps> = ({
 
   return (
     <div className="inline-flex items-center gap-2">
-      <div className="inline-flex p-0.5 border border-gray-200 dark:border-gray-800 rounded text-[11px] font-mono">
+      <div className="inline-flex p-0.5 border border-gray-200 dark:border-gray-800 rounded-sm text-[11px] font-mono">
         <button
           type="button"
           onClick={handleSetTrue}
           aria-pressed={isTrue}
-          className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
+          className={`px-2 py-0.5 rounded-xs transition-colors cursor-pointer ${
             isTrue
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
@@ -54,7 +54,7 @@ export const BoolToggleControl: React.FC<BoolToggleControlProps> = ({
           type="button"
           onClick={handleSetFalse}
           aria-pressed={!isTrue}
-          className={`px-2 py-0.5 rounded-sm transition-colors cursor-pointer ${
+          className={`px-2 py-0.5 rounded-xs transition-colors cursor-pointer ${
             !isTrue
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
               : 'text-gray-500 hover:text-black dark:hover:text-white'

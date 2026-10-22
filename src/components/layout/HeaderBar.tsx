@@ -20,9 +20,9 @@ export const HeaderBar: React.FC = () => {
   };
 
   return (
-    <header className="min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[calc(0.5rem+env(safe-area-inset-top,0px))] pb-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur sticky top-0 z-40 pl-[calc(1rem+env(safe-area-inset-left,0px))] pr-[calc(1rem+env(safe-area-inset-right,0px))] lg:px-6 flex items-center justify-between flex-shrink-0">
+    <header className="min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[calc(0.5rem+env(safe-area-inset-top,0px))] pb-2 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0B0F17]/90 backdrop-blur-sm sticky top-0 z-40 pl-[calc(1rem+env(safe-area-inset-left,0px))] pr-[calc(1rem+env(safe-area-inset-right,0px))] lg:px-6 flex items-center justify-between shrink-0">
       {/* Title */}
-      <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         <h1 className="text-xs font-bold uppercase tracking-widest text-black dark:text-white flex items-center gap-2 whitespace-nowrap m-0 font-sans">
           <span className="inline-block w-2 h-2 bg-black dark:bg-white rounded-none" aria-hidden="true" />
           CS2 SOUNDEVENT
@@ -30,12 +30,12 @@ export const HeaderBar: React.FC = () => {
       </div>
 
       {/* Preferences: [EN/中文] [Theme] */}
-      <div className="flex items-center gap-1.5 sm:gap-2 text-xs flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
         {/* Language Toggle Button */}
         <button
           type="button"
           onClick={handleLangToggle}
-          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer"
+          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           title={t('ui.langToggle')}
           aria-label={t('ui.langToggle')}
         >
@@ -46,7 +46,7 @@ export const HeaderBar: React.FC = () => {
         <button
           type="button"
           onClick={handleThemeToggle}
-          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0 cursor-pointer"
+          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           title={t('ui.themeToggle')}
           aria-label={t('ui.themeToggle')}
         >
