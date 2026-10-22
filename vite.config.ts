@@ -8,7 +8,7 @@ export default defineConfig({
   base: './', // Suitable for GitHub Pages
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {
