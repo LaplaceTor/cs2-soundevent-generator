@@ -80,7 +80,6 @@ export const MIN_MAX_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['startpoint_02', 'endpoint_02'],
   ['startpoint_03', 'endpoint_03'],
   ['volume_fade_initial_input_min', 'volume_fade_initial_input_max'],
-  ['volume_fade_initial_input_map_min', 'volume_fade_initial_input_map_max'],
 ] as const;
 
 export const MIN_MAX_MAP = new Map<string, MinMaxPairInfo>();
@@ -92,6 +91,7 @@ MIN_MAX_PAIRS.forEach(([minKey, maxKey]) => {
 // Linked Pairs without min/max ordering constraints (Enable/Disable synchronously)
 export const LINKED_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['suppression_volume_multiplier', 'suppression_falloff_multiplier'],
+  ['volume_fade_initial_input_map_min', 'volume_fade_initial_input_map_max'],
 ] as const;
 
 export const LINKED_PAIR_MAP = new Map<string, string>();

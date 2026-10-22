@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
 import { useEditorStore } from '@/store/useEditorStore';
 import { SPECS, DEFAULTS } from '@/domain/schema/specs';
-import { MIN_MAX_MAP, TOGGLE_DEPENDENTS, CHILD_TO_PARENT_MAP } from '@/domain/schema/dependencies';
+import { MIN_MAX_MAP, LINKED_PAIR_MAP, TOGGLE_DEPENDENTS, CHILD_TO_PARENT_MAP } from '@/domain/schema/dependencies';
 import { FloatSliderControl } from './controls/FloatSliderControl';
 import { BoolToggleControl } from './controls/BoolToggleControl';
 import { TypeSelectControl } from './controls/TypeSelectControl';
@@ -50,6 +50,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
       ? [0.8, 0.2]
       : 0;
   const pairInfo = MIN_MAX_MAP.get(propKey);
+  const linkedPartner = LINKED_PAIR_MAP.get(propKey);
   const children = TOGGLE_DEPENDENTS[propKey];
   const parentKey = CHILD_TO_PARENT_MAP.get(propKey);
 
@@ -218,6 +219,14 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
                   title={t('badges.linked', { partner: pairInfo.partner })}
                 >
                   ⇄ {pairInfo.role.toUpperCase()}
+                </span>
+              )}
+              {linkedPartner && !pairInfo && (
+                <span
+                  className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
+                  title={t('badges.linked', { partner: linkedPartner })}
+                >
+                  ⇄ LINKED
                 </span>
               )}
               {children && (

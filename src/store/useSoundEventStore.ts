@@ -52,6 +52,34 @@ export interface SoundEventState {
   importShareHash: (hash: string) => boolean;
 }
 
+// Helper to ensure parent property is properly activated when a child property is enabled
+function activateParentProperty(parentKey: string, values: Record<string, any>) {
+  const parentSpec = SPECS[parentKey];
+  if (parentSpec) {
+    if (parentSpec.kind === 'bool' || parentSpec.kind === 'string_bool') {
+      if (!values[parentKey]) {
+        values[parentKey] = true;
+      }
+    } else if (parentSpec.kind === 'float_bool') {
+      if (!values[parentKey]) {
+        values[parentKey] = 1.0;
+      }
+    } else if (parentSpec.kind === 'int_bool') {
+      if (!values[parentKey]) {
+        values[parentKey] = 1;
+      }
+    } else if (parentKey === 'vsnd_selection_type') {
+      if (!values[parentKey] || values[parentKey] === 'random') {
+        values[parentKey] = 'random_weighted';
+      }
+    }
+  } else {
+    if (!values[parentKey]) {
+      values[parentKey] = true;
+    }
+  }
+}
+
 // Helper: strictly enforce min/max pairs and dependencies
 export function normalizeDependencies(
   enabled: Set<string>,
@@ -88,7 +116,12 @@ export function normalizeDependencies(
   for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
     if (enabled.has(parentKey)) {
       const pVal = values[parentKey];
-      if (pVal === false || pVal === 'false' || pVal === 0) {
+      const isFalsy =
+        pVal === false ||
+        pVal === 'false' ||
+        pVal === 0 ||
+        (parentKey === 'vsnd_selection_type' && pVal !== 'random_weighted');
+      if (isFalsy) {
         for (const ck of children) {
           enabled.delete(ck);
           const cPair = MIN_MAX_MAP.get(ck);
@@ -100,12 +133,32 @@ export function normalizeDependencies(
     }
   }
 
-  // 3. If any child is enabled, parent MUST be enabled & true
+  // 3. If any child is enabled, parent MUST be enabled & active
   for (const key of Array.from(enabled)) {
     const parentKey = CHILD_TO_PARENT_MAP.get(key);
     if (parentKey) {
       enabled.add(parentKey);
-      values[parentKey] = true;
+      activateParentProperty(parentKey, values);
+    }
+  }
+
+  // 4. Defensive type normalization for enabled properties
+  for (const key of Array.from(enabled)) {
+    const spec = SPECS[key];
+    if (spec) {
+      if (spec.kind === 'bool' || spec.kind === 'string_bool') {
+        if (typeof values[key] === 'string') {
+          values[key] = values[key] === 'true' || values[key] === '1';
+        }
+      } else if (spec.kind === 'float_bool') {
+        if (typeof values[key] === 'string') {
+          values[key] = values[key] === 'true' || values[key] === '1' || values[key] === '1.0' ? 1.0 : 0.0;
+        }
+      } else if (spec.kind === 'int_bool') {
+        if (typeof values[key] === 'string') {
+          values[key] = values[key] === 'true' || values[key] === '1' ? 1 : 0;
+        }
+      }
     }
   }
 }
@@ -277,7 +330,7 @@ export const useSoundEventStore = create<SoundEventState>()(
               const parentKey = CHILD_TO_PARENT_MAP.get(key);
               if (parentKey) {
                 state.enabledProperties.add(parentKey);
-                state.propertyValues[parentKey] = true;
+                activateParentProperty(parentKey, state.propertyValues);
               }
 
               // Min-Max pair
@@ -395,7 +448,7 @@ export const useSoundEventStore = create<SoundEventState>()(
             const parentKey = CHILD_TO_PARENT_MAP.get(key);
             if (parentKey) {
               state.enabledProperties.add(parentKey);
-              state.propertyValues[parentKey] = true;
+              activateParentProperty(parentKey, state.propertyValues);
             }
 
             // Min-Max constraint
