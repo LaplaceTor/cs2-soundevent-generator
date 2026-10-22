@@ -30,7 +30,7 @@ updates:
       # 忽略暂不兼容生态的 TypeScript 激进版本
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      # 保持 Node 类型定义与当前环境（Node 22）一致
+      # 保持 Node 类型定义与当前环境（Node 24）一致
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
     labels:
