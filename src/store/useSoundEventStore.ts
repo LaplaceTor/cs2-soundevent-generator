@@ -17,6 +17,8 @@ import type { Kv3Diagnostic } from '../domain/kv3/types';
 import {
   SoundEventSharePayloadSchema,
   Kv3PrimitiveOrArraySchema,
+  validateSoundEventDocument,
+  validateSingleProperty,
 } from '../domain/schema/validation';
 import i18n, { loadLanguage } from '../i18n';
 
@@ -35,6 +37,7 @@ interface SoundEventState {
   // Editor states
   code: string;
   diagnostics: Kv3Diagnostic[];
+  fieldErrors: Record<string, string>;
   isEditorDrawerOpen: boolean;
 
   // Search & Filter
@@ -179,6 +182,7 @@ export const useSoundEventStore = create<SoundEventState>()(
 
       code: '',
       diagnostics: [],
+      fieldErrors: {},
       isEditorDrawerOpen: false,
 
       searchQuery: '',
@@ -296,6 +300,11 @@ export const useSoundEventStore = create<SoundEventState>()(
               if (linked) {
                 state.enabledProperties.delete(linked);
               }
+
+              delete state.fieldErrors[key];
+              if (Object.keys(state.fieldErrors).length === 0) {
+                state.diagnostics = [];
+              }
             }
 
             normalizeDependencies(state.enabledProperties, state.propertyValues);
@@ -314,6 +323,18 @@ export const useSoundEventStore = create<SoundEventState>()(
           produce((state: SoundEventState) => {
             state.syncOrigin = 'controls';
             state.propertyValues[key] = val;
+
+            const { isValid, diagnostic } = validateSingleProperty(key, val);
+            if (!isValid && diagnostic) {
+              state.fieldErrors[key] = diagnostic.code;
+              state.diagnostics = [diagnostic];
+              return;
+            } else {
+              delete state.fieldErrors[key];
+              if (Object.keys(state.fieldErrors).length === 0) {
+                state.diagnostics = [];
+              }
+            }
 
             // Parent toggle turned true/false
             const children = TOGGLE_DEPENDENTS[key];
@@ -401,6 +422,7 @@ export const useSoundEventStore = create<SoundEventState>()(
 
             normalizeDependencies(state.enabledProperties, state.propertyValues);
             state.diagnostics = [];
+            state.fieldErrors = {};
             state.code = generateCode(
               state.eventName,
               state.enabledProperties,
@@ -495,43 +517,76 @@ export const useSoundEventStore = create<SoundEventState>()(
             state.code = newCode;
             state.syncOrigin = 'editor';
 
-            const { document, diagnostics } = parseKv3SoundEventDocument(newCode);
-            state.diagnostics = diagnostics;
-
-            if (document) {
-              state.eventName = document.eventName;
-              state.customProperties = document.customProperties ?? {};
-
-              state.enabledProperties.clear();
-              for (const [k, v] of Object.entries(document.properties)) {
-                if (SPECS[k]) {
-                  state.enabledProperties.add(k);
-                  state.propertyValues[k] = v;
+            // Step 1: KV3 Syntax parsing
+            const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(newCode);
+            if (syntaxDiagnostics.length > 0 || !document) {
+              state.diagnostics = syntaxDiagnostics;
+              state.fieldErrors = {};
+              for (const d of syntaxDiagnostics) {
+                if (d.propertyKey) {
+                  state.fieldErrors[d.propertyKey] = d.code;
                 }
               }
-
-              normalizeDependencies(state.enabledProperties, state.propertyValues);
+              return;
             }
+
+            // Step 2: Business validation against SPECS & Dependencies
+            const validation = validateSoundEventDocument(document);
+            if (!validation.isValid) {
+              state.diagnostics = validation.diagnostics;
+              state.fieldErrors = validation.fieldErrors;
+              return;
+            }
+
+            // Step 3: Clear diagnostics & sync valid data to store
+            state.diagnostics = [];
+            state.fieldErrors = {};
+            state.eventName = document.eventName;
+            state.customProperties = document.customProperties ?? {};
+
+            state.enabledProperties.clear();
+            const normProps = validation.normalizedProperties ?? document.properties;
+            for (const [k, v] of Object.entries(normProps)) {
+              if (SPECS[k]) {
+                state.enabledProperties.add(k);
+                state.propertyValues[k] = v;
+              }
+            }
+
+            normalizeDependencies(state.enabledProperties, state.propertyValues);
           })
         ),
 
       formatCurrentCode: () => {
         const { code, eventName, enabledProperties, propertyValues, customProperties, includeComments } = get();
-        const { document, diagnostics } = parseKv3SoundEventDocument(code);
-        if (!document || diagnostics.length > 0) {
-          set({ diagnostics });
+        // Step 1: Syntax parsing
+        const { document, diagnostics: syntaxDiagnostics } = parseKv3SoundEventDocument(code);
+        if (!document || syntaxDiagnostics.length > 0) {
+          set({ diagnostics: syntaxDiagnostics });
           return false;
         }
 
-        const formatted = generateCode(
-          eventName,
-          enabledProperties,
-          propertyValues,
-          customProperties,
-          includeComments
-        );
-        set({ code: formatted, diagnostics: [], syncOrigin: 'controls' });
-        return true;
+        // Step 2: Business validation
+        const validation = validateSoundEventDocument(document);
+        if (!validation.isValid) {
+          set({ diagnostics: validation.diagnostics, fieldErrors: validation.fieldErrors });
+          return false;
+        }
+
+        // Step 3: Serialization
+        try {
+          const formatted = generateCode(
+            eventName,
+            enabledProperties,
+            propertyValues,
+            customProperties,
+            includeComments
+          );
+          set({ code: formatted, diagnostics: [], fieldErrors: {}, syncOrigin: 'controls' });
+          return true;
+        } catch {
+          return false;
+        }
       },
 
       exportShareHash: () => {
@@ -588,6 +643,7 @@ export const useSoundEventStore = create<SoundEventState>()(
 
               normalizeDependencies(state.enabledProperties, state.propertyValues);
               state.diagnostics = [];
+              state.fieldErrors = {};
               state.syncOrigin = 'controls';
               state.code = generateCode(
                 state.eventName,

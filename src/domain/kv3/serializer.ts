@@ -1,7 +1,18 @@
 import { SPECS, type PropertySpec } from '../schema/specs';
+import { validateSoundEventProperties } from '../schema/validation';
+import type { Kv3Diagnostic } from './types';
 
 export const KV3_HEADER =
   '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->';
+
+export class SerializationError extends Error {
+  diagnostics: Kv3Diagnostic[];
+  constructor(message: string, diagnostics: Kv3Diagnostic[] = []) {
+    super(message);
+    this.name = 'SerializationError';
+    this.diagnostics = diagnostics;
+  }
+}
 
 export function normalizeVsndPath(pathStr: string): string {
   if (!pathStr) return '';
@@ -49,34 +60,69 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
 
   if (kind === 'float') {
     const num = Number(val);
-    if (isNaN(num)) return '0.0';
+    if (isNaN(num) || !isFinite(num)) {
+      throw new TypeError(`Invalid numeric value for property "${key}": ${String(val)}`);
+    }
     let str = num.toString();
     if (!str.includes('.')) str += '.0';
     return str;
   }
 
   if (kind === 'vector3') {
-    if (Array.isArray(val)) {
-      const formatted = val.map((n) => {
-        const num = Number(n) || 0;
-        const s = num.toString();
-        return s.includes('.') ? s : s + '.0';
-      });
-      return `[ ${formatted.join(', ')} ]`;
+    if (!Array.isArray(val) || val.length !== 3) {
+      throw new TypeError(
+        `Invalid vector3 dimension for property "${key}": expected 3 elements, got ${
+          Array.isArray(val) ? val.length : typeof val
+        }`
+      );
     }
-    return `[ 0.0, 0.0, 0.0 ]`;
+    const formatted = val.map((n) => {
+      const num = Number(n);
+      if (isNaN(num) || !isFinite(num)) {
+        throw new TypeError(`Invalid numeric element in vector3 "${key}": ${String(n)}`);
+      }
+      const s = num.toString();
+      return s.includes('.') ? s : s + '.0';
+    });
+    return `[ ${formatted.join(', ')} ]`;
   }
 
-  if (kind === 'vector2' || kind === 'vsnd_weights') {
-    if (Array.isArray(val)) {
-      const formatted = val.map((n) => {
-        const num = Number(n) || 0;
-        const s = num.toString();
-        return s.includes('.') ? s : s + '.0';
-      });
-      return `[ ${formatted.join(', ')} ]`;
+  if (kind === 'vector2') {
+    if (!Array.isArray(val) || val.length !== 2) {
+      throw new TypeError(
+        `Invalid vector2 dimension for property "${key}": expected 2 elements, got ${
+          Array.isArray(val) ? val.length : typeof val
+        }`
+      );
     }
-    return `[ 0.8, 0.2 ]`;
+    const formatted = val.map((n) => {
+      const num = Number(n);
+      if (isNaN(num) || !isFinite(num)) {
+        throw new TypeError(`Invalid numeric element in vector2 "${key}": ${String(n)}`);
+      }
+      const s = num.toString();
+      return s.includes('.') ? s : s + '.0';
+    });
+    return `[ ${formatted.join(', ')} ]`;
+  }
+
+  if (kind === 'vsnd_weights') {
+    if (!Array.isArray(val) || val.length < 2) {
+      throw new TypeError(
+        `Invalid vsnd_weights for property "${key}": expected at least 2 elements, got ${
+          Array.isArray(val) ? val.length : typeof val
+        }`
+      );
+    }
+    const formatted = val.map((n) => {
+      const num = Number(n);
+      if (isNaN(num) || !isFinite(num) || num < 0) {
+        throw new TypeError(`Invalid weight in vsnd_weights "${key}": ${String(n)}`);
+      }
+      const s = num.toString();
+      return s.includes('.') ? s : s + '.0';
+    });
+    return `[ ${formatted.join(', ')} ]`;
   }
 
   if (kind === 'array_string') {
@@ -91,7 +137,10 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   if (kind === 'array_float') {
     if (Array.isArray(val)) {
       const formatted = val.map((n) => {
-        const num = Number(n) || 0;
+        const num = Number(n);
+        if (isNaN(num) || !isFinite(num)) {
+          throw new TypeError(`Invalid float in array_float "${key}": ${String(n)}`);
+        }
         const s = num.toString();
         return s.includes('.') ? s : s + '.0';
       });
@@ -113,27 +162,34 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
     return '[ ]';
   }
 
-  if (kind === 'curve' || Array.isArray(val)) {
-    if (Array.isArray(val) && val.length > 0 && Array.isArray(val[0])) {
-      const rows = val.map((row) => {
-        const rowStr = row
-          .map((n: any, idx: number) => {
-            const num = Number(n) || 0;
-            if (idx >= 4) return num.toFixed(1);
-            const s = num.toString();
-            return s.includes('.') ? s : s + '.0';
-          })
-          .join(', ');
-        return `\t\t\t[ ${rowStr} ],`;
-      });
-      return `[\n${rows.join('\n')}\n\t\t]`;
+  if (kind === 'curve') {
+    if (!Array.isArray(val) || val.length < 2) {
+      throw new TypeError(`Invalid curve for property "${key}": expected at least 2 points`);
     }
-    if (Array.isArray(val)) {
-      return `[ ${val.join(', ')} ]`;
-    }
+    const rows = val.map((row) => {
+      if (!Array.isArray(row)) {
+        throw new TypeError(`Invalid curve control point in "${key}": expected array, got ${typeof row}`);
+      }
+      const rowStr = row
+        .map((n: any, idx: number) => {
+          const num = Number(n);
+          if (isNaN(num) || !isFinite(num)) {
+            throw new TypeError(`Invalid numeric value in curve point of "${key}": ${String(n)}`);
+          }
+          if (idx >= 4) return num.toFixed(1);
+          const s = num.toString();
+          return s.includes('.') ? s : s + '.0';
+        })
+        .join(', ');
+      return `\t\t\t[ ${rowStr} ],`;
+    });
+    return `[\n${rows.join('\n')}\n\t\t]`;
   }
 
   if (typeof val === 'number') {
+    if (isNaN(val) || !isFinite(val)) {
+      throw new TypeError(`Invalid numeric value for property "${key}": ${String(val)}`);
+    }
     const str = val.toString();
     return str.includes('.') ? str : str + '.0';
   }
@@ -150,6 +206,7 @@ export interface SerializeOptions {
   includeComments?: boolean;
   commentLookup?: (key: string) => string | undefined;
   customProperties?: Record<string, any>;
+  validate?: boolean;
 }
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -159,16 +216,30 @@ export function serializeSoundEvent(
   properties: Record<string, any>,
   options: SerializeOptions = {}
 ): string {
-  const { includeComments = false, commentLookup, customProperties = {} } = options;
+  const { includeComments = false, commentLookup, customProperties = {}, validate = true } = options;
   const rawName = (eventName || 'SoundEvent_Custom').trim() || 'SoundEvent_Custom';
   const validName = rawName.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]/g, '');
+
+  // Combine standard and preserved custom properties
+  const allProps: Record<string, any> = { ...properties, ...customProperties };
+
+  // Step 3: Only serialize data that passes business validation
+  if (validate) {
+    const valResult = validateSoundEventProperties(allProps);
+    if (!valResult.isValid) {
+      const first = valResult.diagnostics[0];
+      throw new SerializationError(
+        `Cannot serialize invalid SoundEvent: ${first?.code || 'Validation error'} on "${
+          first?.propertyKey || 'unknown'
+        }"`,
+        valResult.diagnostics
+      );
+    }
+  }
 
   const lines: string[] = [];
   lines.push(`"${validName}" =`);
   lines.push(`{`);
-
-  // Combine standard and preserved custom properties
-  const allProps: Record<string, any> = { ...properties, ...customProperties };
 
   for (const [key, val] of Object.entries(allProps)) {
     if (DANGEROUS_KEYS.has(key)) continue;

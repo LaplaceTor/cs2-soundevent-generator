@@ -587,6 +587,18 @@
     "INVALID_STATEMENT": "Line {{line}}: Invalid statement or unexpected symbol",
     "UNCLOSED_BRACE": "Unclosed brace '{' from line {{line}}",
     "UNCLOSED_BRACKET": "Unclosed bracket '[' from line {{line}}",
-    "NO_EVENT_FOUND": "No valid SoundEvent definition found"
+    "NO_EVENT_FOUND": "No valid SoundEvent definition found",
+    "DUPLICATE_KEY": "Line {{line}}: Duplicate property key \"{{key}}\", please remove duplicate assignment",
+    "INVALID_PROPERTY_NUMBER": "Line {{line}}: Property \"{{key}}\" must be a valid number, got: \"{{actual}}\"",
+    "VALUE_OUT_OF_RANGE": "Line {{line}}: Property \"{{key}}\" is out of range ({{range}}), got: {{actual}}",
+    "INVALID_BOOLEAN": "Line {{line}}: Property \"{{key}}\" must be a boolean, got: \"{{actual}}\"",
+    "INVALID_TYPE": "Line {{line}}: Property \"{{key}}\" type mismatch, expected {{expected}}, got: \"{{actual}}\"",
+    "INVALID_VECTOR_DIMENSION": "Line {{line}}: Property \"{{key}}\" dimension mismatch, expected {{expected}} numbers, got {{actual}}",
+    "INVALID_WEIGHTS_DIMENSION": "Line {{line}}: Property \"{{key}}\" must be an array of at least 2 numbers",
+    "INVALID_CURVE_FORMAT": "Line {{line}}: Curve \"{{key}}\" format error, must contain at least 2 control point arrays",
+    "UNSUPPORTED_PROPERTY_VALUE": "Line {{line}}: Unsupported value \"{{actual}}\" for property \"{{key}}\", allowed: {{allowed}}",
+    "INVALID_MIN_MAX_PAIR": "Line {{line}}: \"{{minKey}}\" ({{minVal}}) cannot exceed \"{{maxKey}}\" ({{maxVal}})",
+    "CHILD_MISSING_PARENT": "Line {{line}}: Child property \"{{child}}\" requires parent toggle \"{{parent}}\" to be enabled",
+    "MISSING_REQUIRED_PROPERTY": "Line {{line}}: Missing required property \"{{key}}\""
   }
 }

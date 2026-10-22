@@ -587,6 +587,18 @@
     "INVALID_STATEMENT": "第 {{line}} 行: 语法格式错误，非有效赋值语句或存在多余符号",
     "UNCLOSED_BRACE": "第 {{line}} 行的大括号 '{' 缺少匹配的闭合括号 '}'",
     "UNCLOSED_BRACKET": "第 {{line}} 行的方括号 '[' 缺少匹配的闭合括号 ']'",
-    "NO_EVENT_FOUND": "未能检测到有效的 SoundEvent 事件块"
+    "NO_EVENT_FOUND": "未能检测到有效的 SoundEvent 事件块",
+    "DUPLICATE_KEY": "第 {{line}} 行: 属性 \"{{key}}\" 重复定义，请移除重复赋值",
+    "INVALID_PROPERTY_NUMBER": "第 {{line}} 行: 属性 \"{{key}}\" 的值必须为有效数值，实际为: \"{{actual}}\"",
+    "VALUE_OUT_OF_RANGE": "第 {{line}} 行: 属性 \"{{key}}\" 的数值超出范围 ({{range}})，实际为: {{actual}}",
+    "INVALID_BOOLEAN": "第 {{line}} 行: 属性 \"{{key}}\" 必须为布尔值，实际为: \"{{actual}}\"",
+    "INVALID_TYPE": "第 {{line}} 行: 属性 \"{{key}}\" 类型错误，期望 {{expected}}，实际为: \"{{actual}}\"",
+    "INVALID_VECTOR_DIMENSION": "第 {{line}} 行: 属性 \"{{key}}\" 维度错误，必须包含 {{expected}} 个数值元素，当前长度: {{actual}}",
+    "INVALID_WEIGHTS_DIMENSION": "第 {{line}} 行: 属性 \"{{key}}\" 必须为包含至少 2 个数值权重的数组",
+    "INVALID_CURVE_FORMAT": "第 {{line}} 行: 曲线 \"{{key}}\" 格式错误，必须为包含至少 2 个控制点的数组",
+    "UNSUPPORTED_PROPERTY_VALUE": "第 {{line}} 行: 属性 \"{{key}}\" 的值 \"{{actual}}\" 不受支持，允许的值为: {{allowed}}",
+    "INVALID_MIN_MAX_PAIR": "第 {{line}} 行: \"{{minKey}}\" ({{minVal}}) 不能大于 \"{{maxKey}}\" ({{maxVal}})",
+    "CHILD_MISSING_PARENT": "第 {{line}} 行: 启用子属性 \"{{child}}\" 时必须同时启用父开关 \"{{parent}}\"",
+    "MISSING_REQUIRED_PROPERTY": "第 {{line}} 行: 缺少必需的属性 \"{{key}}\""
   }
 }

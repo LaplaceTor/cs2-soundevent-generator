@@ -21,10 +21,22 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
   const spec = SPECS[propKey];
   const isEnabled = useSoundEventStore((s) => s.enabledProperties.has(propKey));
   const rawValue = useSoundEventStore((s) => s.propertyValues[propKey]);
+  const fieldDiagnostic = useSoundEventStore((s) =>
+    s.diagnostics.find((d) => d.propertyKey === propKey || d.params?.key === propKey)
+  );
   const setPropertyEnabled = useSoundEventStore((s) => s.setPropertyEnabled);
   const setPropertyValue = useSoundEventStore((s) => s.setPropertyValue);
 
   if (!spec) return null;
+
+  const fieldErrorMsg = fieldDiagnostic
+    ? String(
+        t(`errors.${fieldDiagnostic.code}` as any, {
+          line: fieldDiagnostic.line,
+          ...fieldDiagnostic.params,
+        })
+      )
+    : null;
 
   const value =
     rawValue !== undefined
@@ -167,7 +179,11 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
   };
 
   return (
-    <div className={`prop-row ${isEnabled ? 'enabled' : ''}`}>
+    <div
+      className={`prop-row ${isEnabled ? 'enabled' : ''} ${
+        fieldDiagnostic ? 'border-red-500/50 dark:border-red-500/50 bg-red-50/20 dark:bg-red-950/20' : ''
+      }`}
+    >
       {/* Top Header: Checkbox, Label, Badges */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
@@ -190,6 +206,11 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
               <span className="text-[11px] font-mono text-gray-400 select-all">
                 {propKey}
               </span>
+              {fieldDiagnostic && (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 select-none animate-pulse">
+                  ⚠ ERROR
+                </span>
+              )}
               {pairInfo && (
                 <span
                   className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none cursor-help"
@@ -227,7 +248,15 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
       )}
 
       {/* Control Input */}
-      <div className="mt-2 pl-6">{renderControl()}</div>
+      <div className="mt-2 pl-6">
+        {renderControl()}
+        {fieldErrorMsg && (
+          <div className="mt-1.5 text-[11px] text-red-600 dark:text-red-400 font-mono flex items-start gap-1.5 break-words [overflow-wrap:anywhere] leading-snug">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-1 animate-pulse" />
+            <span>{fieldErrorMsg}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

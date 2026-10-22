@@ -1,6 +1,6 @@
 import type { Token } from './tokenizer';
 import { tokenizeKv3 } from './tokenizer';
-import type { Kv3Diagnostic, Kv3SoundEventDocument, Kv3Value } from './types';
+import type { Kv3Diagnostic, Kv3SoundEventDocument, Kv3Value, PropertyLocation } from './types';
 import { SPECS } from '../schema/specs';
 
 export function parseKv3SoundEventDocument(input: string): {
@@ -10,7 +10,7 @@ export function parseKv3SoundEventDocument(input: string): {
   if (!input || !input.trim()) {
     return {
       document: null,
-      diagnostics: [{ code: 'EMPTY_DOCUMENT', line: 1, column: 1 }],
+      diagnostics: [{ code: 'EMPTY_DOCUMENT', line: 1, column: 1, stage: 'syntax' }],
     };
   }
 
@@ -59,14 +59,17 @@ export function parseKv3SoundEventDocument(input: string): {
           code: 'NO_EVENT_FOUND',
           line: lbrace ? lbrace.line : 1,
           column: lbrace ? lbrace.column : 1,
+          stage: 'syntax',
         },
       ],
     };
   }
   advance(); // consume '{'
 
+  const seenKeys = new Map<string, { line: number; column: number }>();
   const properties: Record<string, any> = {};
   const customProperties: Record<string, any> = {};
+  const propertyLocations: Record<string, PropertyLocation> = {};
 
   function parseValue(): Kv3Value | undefined {
     const t = peek();
@@ -105,7 +108,7 @@ export function parseKv3SoundEventDocument(input: string): {
 
       // Check leading comma
       if (peek()?.type === 'COMMA') {
-        diagnostics.push({ code: 'LEADING_ARRAY_COMMA', line: peek()!.line, column: peek()!.column });
+        diagnostics.push({ code: 'LEADING_ARRAY_COMMA', line: peek()!.line, column: peek()!.column, stage: 'syntax' });
       }
 
       const elements: Kv3Value[] = [];
@@ -114,7 +117,7 @@ export function parseKv3SoundEventDocument(input: string): {
       while (peek() && peek()?.type !== 'RBRACKET') {
         if (peek()?.type === 'COMMA') {
           if (!expectComma) {
-            diagnostics.push({ code: 'CONSECUTIVE_COMMAS', line: peek()!.line, column: peek()!.column });
+            diagnostics.push({ code: 'CONSECUTIVE_COMMAS', line: peek()!.line, column: peek()!.column, stage: 'syntax' });
           }
           advance();
           expectComma = false;
@@ -132,7 +135,7 @@ export function parseKv3SoundEventDocument(input: string): {
 
       const rbracket = peek();
       if (!rbracket || rbracket.type !== 'RBRACKET') {
-        diagnostics.push({ code: 'UNCLOSED_BRACKET', line: arrLine, column: arrCol });
+        diagnostics.push({ code: 'UNCLOSED_BRACKET', line: arrLine, column: arrCol, stage: 'syntax' });
         return elements;
       }
       advance(); // consume ']'
@@ -148,13 +151,13 @@ export function parseKv3SoundEventDocument(input: string): {
     if (!keyToken) break;
 
     if (keyToken.type === 'COMMA') {
-      diagnostics.push({ code: 'COMMA_OUTSIDE_ARRAY', line: keyToken.line, column: keyToken.column });
+      diagnostics.push({ code: 'COMMA_OUTSIDE_ARRAY', line: keyToken.line, column: keyToken.column, stage: 'syntax' });
       advance();
       continue;
     }
 
     if (keyToken.type === 'EQUALS') {
-      diagnostics.push({ code: 'MISSING_KEY', line: keyToken.line, column: keyToken.column });
+      diagnostics.push({ code: 'MISSING_KEY', line: keyToken.line, column: keyToken.column, stage: 'syntax' });
       advance();
       parseValue();
       continue;
@@ -162,9 +165,9 @@ export function parseKv3SoundEventDocument(input: string): {
 
     if (keyToken.type !== 'IDENTIFIER' && keyToken.type !== 'STRING') {
       if (keyToken.type === 'RBRACKET') {
-        diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: keyToken.line, column: keyToken.column });
+        diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: keyToken.line, column: keyToken.column, stage: 'syntax' });
       } else {
-        diagnostics.push({ code: 'INVALID_STATEMENT', line: keyToken.line, column: keyToken.column });
+        diagnostics.push({ code: 'INVALID_STATEMENT', line: keyToken.line, column: keyToken.column, stage: 'syntax' });
       }
       advance();
       continue;
@@ -173,42 +176,61 @@ export function parseKv3SoundEventDocument(input: string): {
     const key = keyToken.value;
     advance();
 
+    // Check duplicate key
+    if (seenKeys.has(key)) {
+      const prevLoc = seenKeys.get(key)!;
+      diagnostics.push({
+        code: 'DUPLICATE_KEY',
+        line: keyToken.line,
+        column: keyToken.column,
+        params: { key, firstLine: prevLoc.line },
+        propertyKey: key,
+        stage: 'syntax',
+      });
+    } else {
+      seenKeys.set(key, { line: keyToken.line, column: keyToken.column });
+    }
+
     if (!/^[a-zA-Z0-9_]+$/.test(key)) {
-      diagnostics.push({ code: 'INVALID_KEY_NAME', line: keyToken.line, column: keyToken.column, params: { key } });
+      diagnostics.push({ code: 'INVALID_KEY_NAME', line: keyToken.line, column: keyToken.column, params: { key }, stage: 'syntax' });
     }
 
     // Expect '='
     if (peek()?.type !== 'EQUALS') {
-      diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key } });
+      diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key }, propertyKey: key, stage: 'syntax' });
       continue;
     }
     advance(); // consume '='
 
+    const valToken = peek();
+    const valLine = valToken ? valToken.line : keyToken.line;
+    const valColumn = valToken ? valToken.column : keyToken.column;
+
     const val = parseValue();
     if (val === undefined) {
-      diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key } });
+      diagnostics.push({ code: 'MISSING_VALUE', line: keyToken.line, column: keyToken.column, params: { key }, propertyKey: key, stage: 'syntax' });
       continue;
     }
 
-    // Spec normalization
-    const spec = SPECS[key];
-    if (spec) {
-      if (spec.kind === 'float_bool' || spec.kind === 'int_bool') {
-        properties[key] = typeof val === 'number' ? val > 0 : Boolean(val);
-      } else if (spec.kind === 'bool' || spec.kind === 'string_bool') {
-        properties[key] = typeof val === 'string' ? (val === 'true' || val === '1') : Boolean(val);
-      } else {
-        properties[key] = val;
-      }
+    // Record source location for property & value
+    propertyLocations[key] = {
+      line: keyToken.line,
+      column: keyToken.column,
+      valueLine: valLine,
+      valueColumn: valColumn,
+    };
+
+    // Syntax parsing preserves the parsed value without premature normalization
+    if (SPECS[key]) {
+      properties[key] = val;
     } else {
-      // Unknown/Custom property preserved intact!
       customProperties[key] = val;
     }
   }
 
   const closingBrace = peek();
   if (!closingBrace || closingBrace.type !== 'RBRACE') {
-    diagnostics.push({ code: 'UNCLOSED_BRACE', line: lbrace.line, column: lbrace.column });
+    diagnostics.push({ code: 'UNCLOSED_BRACE', line: lbrace.line, column: lbrace.column, stage: 'syntax' });
   } else {
     advance(); // consume '}'
   }
@@ -217,11 +239,11 @@ export function parseKv3SoundEventDocument(input: string): {
   while (peek()) {
     const extra = advance()!;
     if (extra.type === 'RBRACE') {
-      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACE', line: extra.line, column: extra.column });
+      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACE', line: extra.line, column: extra.column, stage: 'syntax' });
     } else if (extra.type === 'RBRACKET') {
-      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: extra.line, column: extra.column });
+      diagnostics.push({ code: 'UNEXPECTED_CLOSING_BRACKET', line: extra.line, column: extra.column, stage: 'syntax' });
     } else {
-      diagnostics.push({ code: 'INVALID_STATEMENT', line: extra.line, column: extra.column });
+      diagnostics.push({ code: 'INVALID_STATEMENT', line: extra.line, column: extra.column, stage: 'syntax' });
     }
   }
 
@@ -234,6 +256,7 @@ export function parseKv3SoundEventDocument(input: string): {
       eventName,
       properties,
       customProperties,
+      propertyLocations,
     },
     diagnostics: [],
   };
