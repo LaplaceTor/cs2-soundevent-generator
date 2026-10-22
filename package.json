@@ -2,6 +2,7 @@
   "name": "cs2-soundevent-generator",
   "private": true,
   "version": "2.0.0",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js",
