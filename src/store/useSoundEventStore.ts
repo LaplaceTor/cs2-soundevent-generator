@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { produce } from 'immer';
+import { produce, enableMapSet } from 'immer';
 
+enableMapSet();
 import { DEFAULTS, SPECS, typeNeedsValue } from '../domain/schema/specs';
 import { PRESETS } from '../domain/schema/presets';
 import {
