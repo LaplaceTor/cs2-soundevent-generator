@@ -27,7 +27,7 @@ updates:
       # 忽略 Tailwind CSS v4 大版本更新（保留使用稳定成熟的 Tailwind v3）
       - dependency-name: "tailwindcss"
         update-types: ["version-update:semver-major"]
-      # 忽略暂不兼容生态的 TypeScript 激进版本
+      # 忽略 TypeScript 跨大版本更新（当前已升级至 v7）
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
       # 保持 Node 类型定义与当前环境（Node 24）一致
