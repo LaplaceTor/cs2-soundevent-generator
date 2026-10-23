@@ -127,6 +127,20 @@ export function validateSingleProperty(
       };
     }
 
+    if (spec.options?.disable_sentinel !== undefined && val < 0 && val !== spec.options.disable_sentinel) {
+      return {
+        isValid: false,
+        diagnostic: {
+          code: 'VALUE_OUT_OF_RANGE',
+          line,
+          column,
+          params: { key, range: `>= 0 or ${spec.options.disable_sentinel}`, actual: val },
+          propertyKey: key,
+          stage: 'validation',
+        },
+      };
+    }
+
     return { isValid: true };
   }
 

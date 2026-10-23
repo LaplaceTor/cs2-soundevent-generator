@@ -41,6 +41,7 @@ export interface PropertySpec {
   options?: {
     slider_range?: [number, number];
     only_positive?: boolean;
+    disable_sentinel?: number;
     objects?: readonly string[];
     labels?: readonly [string, string];
     default?: any;
@@ -288,12 +289,10 @@ export const SPECS: Record<string, PropertySpec> = {
   position: {
     kind: 'vector3',
     group: 'position',
-    options: { slider_range: [-1000, 1000] },
   },
   position_offset: {
     kind: 'vector3',
     group: 'position',
-    options: { slider_range: [-1000, 1000] },
   },
   position_offset_relative: {
     kind: 'bool',
@@ -504,7 +503,7 @@ export const SPECS: Record<string, PropertySpec> = {
   retrigger_count: {
     kind: 'float',
     group: 'retrigger',
-    options: { slider_range: [-1, 100], only_positive: false },
+    options: { slider_range: [0, 100], only_positive: false, disable_sentinel: -1 },
   },
   instance_limit: {
     kind: 'float',
@@ -514,12 +513,12 @@ export const SPECS: Record<string, PropertySpec> = {
   self_destruct_time: {
     kind: 'float',
     group: 'limits',
-    options: { slider_range: [0, 600], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: false, disable_sentinel: -1.0 },
   },
   stop_at_time: {
     kind: 'float',
     group: 'limits',
-    options: { slider_range: [0, 600], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: false, disable_sentinel: -1.0 },
   },
   block_matching_events: {
     kind: 'bool',

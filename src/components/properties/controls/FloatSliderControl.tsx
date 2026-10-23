@@ -16,6 +16,9 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
 }) => {
   const range = spec.options?.slider_range || [0, 10];
   const onlyPositive = spec.options?.only_positive || false;
+  const disableSentinel = spec.options?.disable_sentinel;
+  const hasDisableBtn = disableSentinel !== undefined;
+
   let curNum = Number(value);
   if (isNaN(curNum)) curNum = 0;
 
@@ -40,7 +43,8 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
   }, []);
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextVal = parseFloat(e.target.value) || 0;
+    let nextVal = parseFloat(e.target.value) || 0;
+    if (hasDisableBtn && nextVal < 0) nextVal = 0;
     setLocalVal(nextVal);
     latestValRef.current = nextVal;
 
@@ -66,6 +70,9 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
     let num = parseFloat(e.target.value);
     if (isNaN(num)) return;
     if (onlyPositive && num < 0) num = 0;
+    if (hasDisableBtn && num < 0 && num !== disableSentinel) {
+      num = disableSentinel;
+    }
     setLocalVal(num);
     latestValRef.current = num;
     if (rafRef.current !== null) {
@@ -75,11 +82,28 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
     onChange(num);
   };
 
+  const handleToggleDisable = () => {
+    if (!hasDisableBtn) return;
+    const isCurrentlyDisabled = localVal === disableSentinel;
+    const nextVal = isCurrentlyDisabled ? 0 : disableSentinel;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    setLocalVal(nextVal);
+    latestValRef.current = nextVal;
+    onChange(nextVal);
+  };
+
+  const isSentinelDisabled = hasDisableBtn && localVal === disableSentinel;
+
   let minVal = range[0] ?? 0;
   let maxVal = range[1] ?? 10;
   const displayNum = localVal;
-  if (displayNum < minVal) minVal = displayNum;
+  if (!hasDisableBtn && displayNum < minVal) minVal = displayNum;
   if (displayNum > maxVal) maxVal = displayNum;
+
+  const sliderPos = isSentinelDisabled ? minVal : Math.max(minVal, displayNum);
 
   const span = maxVal - minVal;
   let step = '0.01';
@@ -88,14 +112,33 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
   else if (span <= 2) step = '0.01';
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2.5">
+      {hasDisableBtn && (
+        <button
+          type="button"
+          onClick={handleToggleDisable}
+          aria-pressed={isSentinelDisabled}
+          title={
+            isSentinelDisabled
+              ? `Disabled (${disableSentinel}). Click to set to 0`
+              : `Click to disable (${disableSentinel})`
+          }
+          className={`px-1.5 py-0.5 border rounded-sm font-mono text-[10px] font-semibold tracking-wider transition-colors shrink-0 cursor-pointer ${
+            isSentinelDisabled
+              ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+              : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white'
+          }`}
+        >
+          DISABLE
+        </button>
+      )}
       <input
         type="range"
-        className="minimal-slider flex-1"
+        className={`minimal-slider flex-1 ${isSentinelDisabled ? 'opacity-40' : ''}`}
         min={minVal}
         max={maxVal}
         step={step}
-        value={displayNum}
+        value={sliderPos}
         aria-label={`${propKey} slider`}
         onChange={handleSliderChange}
         onPointerUp={handlePointerUp}
@@ -106,7 +149,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
         className="w-20 px-2 py-0.5 font-mono text-xs bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm outline-hidden focus:border-black dark:focus:border-white text-right"
         value={displayNum}
         step={step}
-        min={onlyPositive ? '0' : undefined}
+        min={onlyPositive ? '0' : hasDisableBtn ? String(disableSentinel) : undefined}
         aria-label={`${propKey} value`}
         onChange={handleNumberChange}
       />
