@@ -170,19 +170,21 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 sm:space-y-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans min-w-0 break-words [overflow-wrap:anywhere]">
+        <div className="p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-6 text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-sans min-w-0 break-words [overflow-wrap:anywhere]">
           {/* Section 1: Core Concept */}
-          <div className="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
-            <h3 className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5 m-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5 m-0 mb-2.5">
               <span aria-hidden="true">🎯</span> {concept.title}
             </h3>
-            <p className="text-gray-700 dark:text-gray-300">{concept.p1}</p>
-            <p className="text-gray-700 dark:text-gray-300">{concept.p2}</p>
+            <div className="p-3.5 rounded-lg border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
+              <p className="text-gray-700 dark:text-gray-300 m-0">{concept.p1}</p>
+              <p className="text-gray-700 dark:text-gray-300 m-0">{concept.p2}</p>
+            </div>
           </div>
 
           {/* Section 2: Entity Selection */}
-          <div className="space-y-2.5 min-w-0">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5 m-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5 m-0 mb-2.5">
               <span aria-hidden="true">🔊</span> {t('guideModal.entitiesTitle')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -204,7 +206,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
                         {ent.badge}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-[11px] break-words [overflow-wrap:anywhere]">
+                    <p className="text-gray-600 dark:text-gray-400 text-[11px] break-words [overflow-wrap:anywhere] m-0">
                       <strong>{t('guideModal.mechanismLabel')}</strong> {ent.mechanism}
                       <br />
                       <strong>{t('guideModal.scenarioLabel')}</strong> {ent.scenario}
@@ -216,19 +218,21 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Section 3: 4-Step Practical Implementation */}
-          <div className="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2 min-w-0 break-words [overflow-wrap:anywhere]">
-            <h3 className="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5 m-0">
+          {/* Section 3: Practical Implementation */}
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs flex items-center gap-1.5 m-0 mb-2.5">
               <span aria-hidden="true">🚀</span> {t('guideModal.stepsTitle')}
             </h3>
-            <ol className="list-decimal list-inside space-y-1.5 text-gray-700 dark:text-gray-300 text-[11px] break-words [overflow-wrap:anywhere]">
-              {Array.isArray(steps) &&
-                steps.map((st, sIdx) => (
-                  <li key={sIdx} className="break-words [overflow-wrap:anywhere]">
-                    <span className="break-words [overflow-wrap:anywhere]">{st}</span>
-                  </li>
-                ))}
-            </ol>
+            <div className="p-3.5 rounded-lg border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 min-w-0 break-words [overflow-wrap:anywhere]">
+              <ol className="list-decimal list-outside pl-4 space-y-1.5 text-gray-700 dark:text-gray-300 text-[11px] break-words [overflow-wrap:anywhere] m-0">
+                {Array.isArray(steps) &&
+                  steps.map((st, sIdx) => (
+                    <li key={sIdx} className="break-words [overflow-wrap:anywhere]">
+                      <span>{st}</span>
+                    </li>
+                  ))}
+              </ol>
+            </div>
           </div>
         </div>
 
