@@ -199,37 +199,37 @@ export const SPECS: Record<string, PropertySpec> = {
   volume_random_min: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [-2.0, 2.0], only_positive: false },
+    options: { slider_range: [-10.0, 10.0], only_positive: false },
   },
   volume_random_max: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [-2.0, 2.0], only_positive: false },
+    options: { slider_range: [-10.0, 10.0], only_positive: false },
   },
   pitch: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [-1.0, 5.0], only_positive: false },
+    options: { slider_range: [-10.0, 10.0], only_positive: false },
   },
   pitch_random_min: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [-2.0, 2.0], only_positive: false },
+    options: { slider_range: [-10.0, 10.0], only_positive: false },
   },
   pitch_random_max: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [-2.0, 2.0], only_positive: false },
+    options: { slider_range: [-10.0, 10.0], only_positive: false },
   },
   delay: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [0, 60], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: true },
   },
   priority: {
     kind: 'float',
     group: 'playback',
-    options: { slider_range: [0, 100], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   ducking_bypass: {
     kind: 'float_bool',
@@ -335,7 +335,7 @@ export const SPECS: Record<string, PropertySpec> = {
   distance_multiplier: {
     kind: 'float',
     group: 'position',
-    options: { slider_range: [0, 50], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   broadcast_distance_override: {
     kind: 'float',
@@ -467,7 +467,7 @@ export const SPECS: Record<string, PropertySpec> = {
   dsp_blend: {
     kind: 'float',
     group: 'dsp',
-    options: { slider_range: [0, 1], only_positive: true },
+    options: { slider_range: [0, 1], only_positive: false, disable_sentinel: -1.0 },
   },
   dsp_bypass: {
     kind: 'float_bool',
@@ -488,7 +488,7 @@ export const SPECS: Record<string, PropertySpec> = {
   retrigger_interval_min: {
     kind: 'float',
     group: 'retrigger',
-    options: { slider_range: [0.0, 200.0], only_positive: true },
+    options: { slider_range: [0.0, 600.0], only_positive: true },
   },
   retrigger_interval_max: {
     kind: 'float',
@@ -498,7 +498,7 @@ export const SPECS: Record<string, PropertySpec> = {
   retrigger_radius: {
     kind: 'float',
     group: 'retrigger',
-    options: { slider_range: [0.0, 100000.0], only_positive: true },
+    options: { slider_range: [0.0, 10000.0], only_positive: true },
   },
   retrigger_count: {
     kind: 'float',
@@ -508,7 +508,7 @@ export const SPECS: Record<string, PropertySpec> = {
   instance_limit: {
     kind: 'float',
     group: 'limits',
-    options: { slider_range: [0, 16], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   self_destruct_time: {
     kind: 'float',
@@ -531,7 +531,7 @@ export const SPECS: Record<string, PropertySpec> = {
   block_duration: {
     kind: 'float',
     group: 'limits',
-    options: { slider_range: [0, 60], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: true },
   },
   block_distance: {
     kind: 'float',
@@ -549,7 +549,7 @@ export const SPECS: Record<string, PropertySpec> = {
   block_other_duration: {
     kind: 'float',
     group: 'limits',
-    options: { slider_range: [0, 60], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: true },
   },
   block_other_distance: {
     kind: 'float',
@@ -753,22 +753,22 @@ export const SPECS: Record<string, PropertySpec> = {
   doppler_factor: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 5], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   doppler_factor_receding: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 5], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   impact_speed_input: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 2000], only_positive: true },
+    options: { slider_range: [0, 10000], only_positive: true },
   },
   velocity_magnitude: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 3000], only_positive: true },
+    options: { slider_range: [0, 10000], only_positive: true },
   },
   voice_fade_out_time: {
     kind: 'float',
@@ -778,7 +778,7 @@ export const SPECS: Record<string, PropertySpec> = {
   voice_looped_culling_update_time: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 5], only_positive: true },
+    options: { slider_range: [0, 10], only_positive: true },
   },
   randomize_start_time: {
     kind: 'bool',
@@ -792,7 +792,7 @@ export const SPECS: Record<string, PropertySpec> = {
   retrigger_keepalive_override: {
     kind: 'float',
     group: 'advanced',
-    options: { slider_range: [0, 100], only_positive: true },
+    options: { slider_range: [0, 600], only_positive: true },
   },
   suppression_enable: {
     kind: 'bool',
@@ -819,7 +819,7 @@ export const SPECS: Record<string, PropertySpec> = {
   vsnd_selection_type: {
     kind: 'select',
     group: 'playback',
-    options: { objects: ['random', 'random_weighted', 'round_robin', 'sequential'] },
+    options: { objects: ['random', 'random_exclusive', 'random_weighted', 'index', 'forward', 'backward'] },
   },
   vsnd_weights: {
     kind: 'vsnd_weights',
@@ -925,7 +925,7 @@ export const DEFAULTS: Record<string, any> = {
   restrict_source_reverb: false,
   dsp_preset: 'reverb_5_smallRoom',
   override_dsp_preset: false,
-  dsp_blend: 1.0,
+  dsp_blend: -1.0,
   dsp_bypass: 0.0,
   enable_child_events: false,
   soundevent_01: '',

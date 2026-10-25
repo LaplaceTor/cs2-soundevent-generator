@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Heart } from 'lucide-react';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
 
 export const HeaderBar: React.FC = () => {
@@ -29,8 +30,21 @@ export const HeaderBar: React.FC = () => {
         </h1>
       </div>
 
-      {/* Preferences: [EN/中文] [Theme] */}
+      {/* Preferences: [Support] [EN/中文] [Theme] */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
+        {/* Support Developer Button */}
+        <a
+          href={lang === 'zh' ? 'https://afdian.com/a/laplacetor' : 'https://ko-fi.com/R5S426JG8P'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer text-black dark:text-white no-underline"
+          title={t('ui.supportMe')}
+          aria-label={t('ui.supportMe')}
+        >
+          <Heart className="w-3 h-3 text-red-500 fill-current" aria-hidden="true" />
+          <span className="hidden sm:inline">{t('ui.supportMe')}</span>
+        </a>
+
         {/* Language Toggle Button */}
         <button
           type="button"
