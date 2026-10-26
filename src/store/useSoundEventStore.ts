@@ -10,6 +10,7 @@ import {
   CHILD_TO_PARENT_MAP,
   MIN_MAX_MAP,
   LINKED_PAIR_MAP,
+  isParentActive,
 } from '../domain/schema/dependencies';
 import { serializeSoundEvent } from '../domain/kv3/serializer';
 import { parseKv3SoundEventDocument } from '../domain/kv3/parser';
@@ -21,7 +22,7 @@ import {
   validateSingleProperty,
 } from '../domain/schema/validation';
 import i18n, { loadLanguage } from '../i18n';
-import { useEditorStore, registerDocumentSyncHandler } from './useEditorStore';
+import { useEditorStore, registerDocumentSyncHandler, type SyncOrigin } from './useEditorStore';
 
 export interface SoundEventState {
   eventName: string;
@@ -116,18 +117,20 @@ export function normalizeDependencies(
   for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
     if (enabled.has(parentKey)) {
       const pVal = values[parentKey];
-      const isFalsy =
-        pVal === false ||
-        pVal === 'false' ||
-        pVal === 0 ||
-        (parentKey === 'vsnd_selection_type' && pVal !== 'random_weighted');
+      const isFalsy = !isParentActive(parentKey, pVal);
       if (isFalsy) {
         for (const ck of children) {
-          enabled.delete(ck);
-          const cPair = MIN_MAX_MAP.get(ck);
-          if (cPair) enabled.delete(cPair.partner);
-          const cLinked = LINKED_PAIR_MAP.get(ck);
-          if (cLinked) enabled.delete(cLinked);
+          const parents = CHILD_TO_PARENT_MAP.get(ck);
+          const hasOtherActiveParent = parents?.some(
+            (pk) => pk !== parentKey && enabled.has(pk) && isParentActive(pk, values[pk])
+          );
+          if (!hasOtherActiveParent) {
+            enabled.delete(ck);
+            const cPair = MIN_MAX_MAP.get(ck);
+            if (cPair) enabled.delete(cPair.partner);
+            const cLinked = LINKED_PAIR_MAP.get(ck);
+            if (cLinked) enabled.delete(cLinked);
+          }
         }
       }
     }
@@ -135,10 +138,16 @@ export function normalizeDependencies(
 
   // 3. If any child is enabled, parent MUST be enabled & active
   for (const key of Array.from(enabled)) {
-    const parentKey = CHILD_TO_PARENT_MAP.get(key);
-    if (parentKey) {
-      enabled.add(parentKey);
-      activateParentProperty(parentKey, values);
+    const parentKeys = CHILD_TO_PARENT_MAP.get(key);
+    if (parentKeys && parentKeys.length > 0) {
+      const hasActiveParent = parentKeys.some(
+        (pk) => enabled.has(pk) && isParentActive(pk, values[pk])
+      );
+      if (!hasActiveParent) {
+        const primaryParent = parentKeys[0];
+        enabled.add(primaryParent);
+        activateParentProperty(primaryParent, values);
+      }
     }
   }
 
@@ -195,10 +204,11 @@ function syncCodeToEditor(
   enabled: Set<string>,
   values: Record<string, any>,
   custom: Record<string, any>,
-  includeComments: boolean
+  includeComments: boolean,
+  origin: SyncOrigin = 'controls'
 ) {
   const code = generateCode(eventName, enabled, values, custom, includeComments);
-  useEditorStore.getState().setCodeFromControls(code);
+  useEditorStore.getState().setCodeFromControls(code, origin);
   return code;
 }
 
@@ -280,7 +290,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         'distance_volume_mapping_curve',
         'vsnd_files_track_01',
       ]),
-      propertyValues: { ...PRESETS.csgo_mega_basic!.properties },
+      propertyValues: structuredClone(PRESETS.csgo_mega_basic!.properties),
       customProperties: {},
       includeComments: false,
       lang: 'zh',
@@ -327,10 +337,16 @@ export const useSoundEventStore = create<SoundEventState>()(
               }
 
               // Child property
-              const parentKey = CHILD_TO_PARENT_MAP.get(key);
-              if (parentKey) {
-                state.enabledProperties.add(parentKey);
-                activateParentProperty(parentKey, state.propertyValues);
+              const parentKeys = CHILD_TO_PARENT_MAP.get(key);
+              if (parentKeys && parentKeys.length > 0) {
+                const hasActiveParent = parentKeys.some(
+                  (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
+                );
+                if (!hasActiveParent) {
+                  const primaryParent = parentKeys[0];
+                  state.enabledProperties.add(primaryParent);
+                  activateParentProperty(primaryParent, state.propertyValues);
+                }
               }
 
               // Min-Max pair
@@ -364,21 +380,31 @@ export const useSoundEventStore = create<SoundEventState>()(
               const children = TOGGLE_DEPENDENTS[key];
               if (children) {
                 for (const ck of children) {
-                  state.enabledProperties.delete(ck);
-                  const childPair = MIN_MAX_MAP.get(ck);
-                  if (childPair) state.enabledProperties.delete(childPair.partner);
-                  const childLinked = LINKED_PAIR_MAP.get(ck);
-                  if (childLinked) state.enabledProperties.delete(childLinked);
+                  const parents = CHILD_TO_PARENT_MAP.get(ck);
+                  const hasOtherActiveParent = parents?.some(
+                    (pk) => pk !== key && state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
+                  );
+                  if (!hasOtherActiveParent) {
+                    state.enabledProperties.delete(ck);
+                    const childPair = MIN_MAX_MAP.get(ck);
+                    if (childPair) state.enabledProperties.delete(childPair.partner);
+                    const childLinked = LINKED_PAIR_MAP.get(ck);
+                    if (childLinked) state.enabledProperties.delete(childLinked);
+                  }
                 }
               }
 
               // 2. Child removed: check if siblings remain
-              const parentKey = CHILD_TO_PARENT_MAP.get(key);
-              if (parentKey) {
-                const siblings = TOGGLE_DEPENDENTS[parentKey] ?? [];
-                const hasOther = siblings.some((k) => k !== key && state.enabledProperties.has(k));
-                if (!hasOther) {
-                  state.enabledProperties.delete(parentKey);
+              const parentKeys = CHILD_TO_PARENT_MAP.get(key);
+              if (parentKeys) {
+                for (const parentKey of parentKeys) {
+                  if (state.enabledProperties.has(parentKey)) {
+                    const siblings = TOGGLE_DEPENDENTS[parentKey] ?? [];
+                    const hasOther = siblings.some((k) => k !== key && state.enabledProperties.has(k));
+                    if (!hasOther) {
+                      state.enabledProperties.delete(parentKey);
+                    }
+                  }
                 }
               }
 
@@ -424,14 +450,20 @@ export const useSoundEventStore = create<SoundEventState>()(
             // Parent toggle turned true/false
             const children = TOGGLE_DEPENDENTS[key];
             if (children) {
-              const isFalse = val === false || val === 'false' || val === 0;
+              const isFalse = !isParentActive(key, val);
               if (isFalse) {
                 for (const ck of children) {
-                  state.enabledProperties.delete(ck);
-                  const childPair = MIN_MAX_MAP.get(ck);
-                  if (childPair) state.enabledProperties.delete(childPair.partner);
-                  const childLinked = LINKED_PAIR_MAP.get(ck);
-                  if (childLinked) state.enabledProperties.delete(childLinked);
+                  const parents = CHILD_TO_PARENT_MAP.get(ck);
+                  const hasOtherActiveParent = parents?.some(
+                    (pk) => pk !== key && state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
+                  );
+                  if (!hasOtherActiveParent) {
+                    state.enabledProperties.delete(ck);
+                    const childPair = MIN_MAX_MAP.get(ck);
+                    if (childPair) state.enabledProperties.delete(childPair.partner);
+                    const childLinked = LINKED_PAIR_MAP.get(ck);
+                    if (childLinked) state.enabledProperties.delete(childLinked);
+                  }
                 }
               } else {
                 for (const ck of children) {
@@ -445,10 +477,16 @@ export const useSoundEventStore = create<SoundEventState>()(
             }
 
             // Child editing ensures parent is true
-            const parentKey = CHILD_TO_PARENT_MAP.get(key);
-            if (parentKey) {
-              state.enabledProperties.add(parentKey);
-              activateParentProperty(parentKey, state.propertyValues);
+            const parentKeys = CHILD_TO_PARENT_MAP.get(key);
+            if (parentKeys && parentKeys.length > 0) {
+              const hasActiveParent = parentKeys.some(
+                (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
+              );
+              if (!hasActiveParent) {
+                const primaryParent = parentKeys[0];
+                state.enabledProperties.add(primaryParent);
+                activateParentProperty(primaryParent, state.propertyValues);
+              }
             }
 
             // Min-Max constraint
@@ -816,6 +854,22 @@ export const useSoundEventStore = create<SoundEventState>()(
           theme,
         };
       },
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.warn('Failed to rehydrate sound event store:', error);
+        }
+        if (!useEditorStore.getState().code) {
+          const current = state || useSoundEventStore.getState();
+          syncCodeToEditor(
+            current.eventName,
+            current.enabledProperties,
+            current.propertyValues,
+            current.customProperties,
+            current.includeComments,
+            'init'
+          );
+        }
+      },
     }
   )
 );
@@ -823,3 +877,16 @@ export const useSoundEventStore = create<SoundEventState>()(
 registerDocumentSyncHandler((doc, normProps) => {
   useSoundEventStore.getState().syncFromValidatedDocument(doc, normProps);
 });
+
+// Ensure initial code is populated in editor if empty (e.g. first load without localStorage)
+if (!useEditorStore.getState().code) {
+  const initialState = useSoundEventStore.getState();
+  syncCodeToEditor(
+    initialState.eventName,
+    initialState.enabledProperties,
+    initialState.propertyValues,
+    initialState.customProperties,
+    initialState.includeComments,
+    'init'
+  );
+}

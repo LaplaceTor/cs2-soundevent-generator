@@ -249,6 +249,7 @@ export const PRESETS: Record<string, PresetDefinition> = {
       ],
       use_volume_convar: true,
       volume_convar: 'snd_surf_volume_slide',
+      use_distance_volume_mapping_curve: true,
       distance_volume_mapping_curve: [
         [0.0, 1.0, 0.0, 0.0, 2.0, 3.0],
         [90.0, 1.0, -0.01, -0.01, 3.0, 1.0],
@@ -293,6 +294,7 @@ export const PRESETS: Record<string, PresetDefinition> = {
       use_velocity_eq: true,
       use_volume_convar: true,
       volume_convar: 'snd_surf_volume_slide',
+      use_distance_volume_mapping_curve: true,
       distance_volume_mapping_curve: [
         [0.0, 1.0, 0.0, 0.0, 2.0, 3.0],
         [90.0, 1.0, -0.01, -0.01, 3.0, 1.0],

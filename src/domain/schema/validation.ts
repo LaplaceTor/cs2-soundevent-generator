@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { SPECS, typeNeedsValue } from './specs';
-import { TOGGLE_DEPENDENTS, MIN_MAX_PAIRS } from './dependencies';
+import {
+  TOGGLE_DEPENDENTS,
+  MIN_MAX_PAIRS,
+  CHILD_TO_PARENT_MAP,
+  isParentActive,
+} from './dependencies';
+
+export { isParentActive };
 import type { Kv3Diagnostic, Kv3SoundEventDocument, PropertyLocation } from '../kv3/types';
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -585,32 +592,25 @@ export function validateSoundEventProperties(
     }
   }
 
-  // 3. Validate Toggle Dependencies (Child requires Parent to be active)
-  for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
-    for (const childKey of children) {
-      if (childKey in properties) {
-        const hasParent = parentKey in properties;
-        const pVal = properties[parentKey];
-        const isParentActive =
-          hasParent &&
-          pVal !== false &&
-          pVal !== 'false' &&
-          pVal !== 0 &&
-          pVal !== '0' &&
-          pVal !== '0.0';
-        if (!isParentActive) {
-          const loc = locations[childKey] ?? { line: 1, column: 1 };
-          const diag: Kv3Diagnostic = {
-            code: 'CHILD_MISSING_PARENT',
-            line: loc.line,
-            column: loc.column,
-            params: { child: childKey, parent: parentKey },
-            propertyKey: childKey,
-            stage: 'validation',
-          };
-          diagnostics.push(diag);
-          fieldErrors[childKey] = diag.code;
-        }
+  // 3. Validate Toggle Dependencies (Child requires at least one Parent to be active)
+  for (const [childKey, parentKeys] of CHILD_TO_PARENT_MAP.entries()) {
+    if (childKey in properties) {
+      const hasActiveParent = parentKeys.some((parentKey) =>
+        isParentActive(parentKey, properties[parentKey])
+      );
+      if (!hasActiveParent) {
+        const primaryParent = parentKeys[0];
+        const loc = locations[childKey] ?? { line: 1, column: 1 };
+        const diag: Kv3Diagnostic = {
+          code: 'CHILD_MISSING_PARENT',
+          line: loc.line,
+          column: loc.column,
+          params: { child: childKey, parent: primaryParent },
+          propertyKey: childKey,
+          stage: 'validation',
+        };
+        diagnostics.push(diag);
+        fieldErrors[childKey] = diag.code;
       }
     }
   }

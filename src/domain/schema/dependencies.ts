@@ -58,11 +58,35 @@ export const TOGGLE_DEPENDENTS: Record<string, readonly string[]> = {
   update_track_syncpoint_index: ['syncpoints_01'],
 } as const;
 
-export const CHILD_TO_PARENT_MAP = new Map<string, string>();
+export const CHILD_TO_PARENT_MAP = new Map<string, string[]>();
 for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
   for (const childKey of children) {
-    CHILD_TO_PARENT_MAP.set(childKey, parentKey);
+    const existing = CHILD_TO_PARENT_MAP.get(childKey);
+    if (existing) {
+      existing.push(parentKey);
+    } else {
+      CHILD_TO_PARENT_MAP.set(childKey, [parentKey]);
+    }
   }
+}
+
+/**
+ * Checks whether a parent toggle property is considered active.
+ * For vsnd_selection_type, it is only active if set to 'random_weighted'.
+ * For other toggle/boolean properties, it is active if truthy and not 'false'/'0'/'0.0'/0.
+ */
+export function isParentActive(parentKey: string, val: any): boolean {
+  if (val === undefined || val === null) return false;
+  if (parentKey === 'vsnd_selection_type') {
+    return val === 'random_weighted';
+  }
+  return (
+    val !== false &&
+    val !== 'false' &&
+    val !== 0 &&
+    val !== '0' &&
+    val !== '0.0'
+  );
 }
 
 // Strictly bounded Min/Max pairs (Enforces min <= max)
