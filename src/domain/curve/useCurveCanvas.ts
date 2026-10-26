@@ -9,6 +9,20 @@ export interface CurveCanvasOptions {
   fallbackText?: string;
 }
 
+interface TransformBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+interface Transformers extends TransformBounds {
+  toScreenX: (x: number) => number;
+  toScreenY: (y: number) => number;
+  toDataX: (sx: number) => number;
+  toDataY: (sy: number) => number;
+}
+
 export function useCurveCanvas({
   points,
   onPointsChange,
@@ -30,11 +44,13 @@ export function useCurveCanvas({
   const onLiveDragRef = useRef(onLiveDrag);
   onLiveDragRef.current = onLiveDrag;
 
-  const transformersRef = useRef<any>(null);
+  const transformersRef = useRef<Transformers | null>(null);
+  const dragBoundsRef = useRef<TransformBounds | null>(null);
   const drawRef = useRef<() => void>(() => {});
 
-  // Update pointsRef and redraw when props change
+  // Update pointsRef and redraw when props change (skip redundant redraw during active drag)
   useEffect(() => {
+    if (activeIdxRef.current !== -1) return;
     pointsRef.current = [...points].sort((a, b) => a[0]! - b[0]!);
     drawRef.current();
   }, [points, isDark, fallbackText]);
@@ -74,10 +90,22 @@ export function useCurveCanvas({
       const cPoints = raw.map((p) => new CurvePoint(p[0]!, p[1]!, p[2]!, p[3]!, p[4]!, p[5]!));
       setupAllCurveValues(cPoints);
 
-      const minX = Math.min(0, cPoints[0]!.xValue);
-      const maxX = Math.max(cPoints[cPoints.length - 1]!.xValue, minX + 1.0);
-      const minY = Math.min(0, ...cPoints.map((p) => p.yValue));
-      const maxY = Math.max(1.0, ...cPoints.map((p) => p.yValue));
+      let minX: number;
+      let maxX: number;
+      let minY: number;
+      let maxY: number;
+
+      if (activeIdxRef.current !== -1 && dragBoundsRef.current) {
+        minX = dragBoundsRef.current.minX;
+        maxX = dragBoundsRef.current.maxX;
+        minY = dragBoundsRef.current.minY;
+        maxY = dragBoundsRef.current.maxY;
+      } else {
+        minX = Math.min(0, cPoints[0]!.xValue);
+        maxX = Math.max(cPoints[cPoints.length - 1]!.xValue, minX + 1.0);
+        minY = Math.min(0, ...cPoints.map((p) => p.yValue));
+        maxY = Math.max(1.0, ...cPoints.map((p) => p.yValue));
+      }
 
       const padL = 40;
       const padR = 20;
@@ -92,7 +120,7 @@ export function useCurveCanvas({
       const toDataX = (sx: number) => minX + ((sx - padL) / plotW) * (maxX - minX);
       const toDataY = (sy: number) => minY + (1 - (sy - padT) / plotH) * (maxY - minY);
 
-      transformersRef.current = { toScreenX, toScreenY, toDataX, toDataY, minX, maxX };
+      transformersRef.current = { toScreenX, toScreenY, toDataX, toDataY, minX, maxX, minY, maxY };
 
       // Background grid
       const dark = isDarkRef.current;
@@ -230,6 +258,14 @@ export function useCurveCanvas({
         try {
           canvas!.setPointerCapture(e.pointerId);
         } catch (_) {}
+        if (transformersRef.current) {
+          dragBoundsRef.current = {
+            minX: transformersRef.current.minX,
+            maxX: transformersRef.current.maxX,
+            minY: transformersRef.current.minY,
+            maxY: transformersRef.current.maxY,
+          };
+        }
         draw();
       }
     }
@@ -251,7 +287,7 @@ export function useCurveCanvas({
         const minAllowedX = activeIdx === 0 ? 0 : (currentPts[activeIdx - 1]?.[0] ?? 0);
         const maxAllowedX = activeIdx === lastIdx ? 50000 : (currentPts[activeIdx + 1]?.[0] ?? 50000);
 
-        const span = Math.max(0.1, (currentPts[lastIdx]?.[0] ?? 1) - (currentPts[0]?.[0] ?? 0));
+        const span = Math.max(0.1, transformersRef.current.maxX - transformersRef.current.minX);
 
         if (span <= 10) {
           newX = Math.round(newX * 100) / 100;
@@ -305,6 +341,7 @@ export function useCurveCanvas({
           canvas!.releasePointerCapture(e.pointerId);
         } catch (_) {}
         activeIdxRef.current = -1;
+        dragBoundsRef.current = null;
         const sorted = [...pointsRef.current].sort((a, b) => a[0]! - b[0]!);
         pointsRef.current = sorted;
         draw();
