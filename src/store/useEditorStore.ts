@@ -103,7 +103,10 @@ export const useEditorStore = create<EditorState>()((set) => ({
     set(
       produce((state: EditorState) => {
         state.fieldErrors[key] = diagnostic.code;
-        state.diagnostics = [diagnostic];
+        const diagWithKey = diagnostic.propertyKey ? diagnostic : { ...diagnostic, propertyKey: key };
+        state.diagnostics = state.diagnostics
+          .filter((d) => d.propertyKey !== key)
+          .concat(diagWithKey);
       })
     ),
 
@@ -111,9 +114,7 @@ export const useEditorStore = create<EditorState>()((set) => ({
     set(
       produce((state: EditorState) => {
         delete state.fieldErrors[key];
-        if (Object.keys(state.fieldErrors).length === 0) {
-          state.diagnostics = [];
-        }
+        state.diagnostics = state.diagnostics.filter((d) => d.propertyKey !== key);
       })
     ),
 

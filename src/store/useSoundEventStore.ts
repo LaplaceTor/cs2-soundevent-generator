@@ -12,7 +12,7 @@ import {
   LINKED_PAIR_MAP,
   isParentActive,
 } from '../domain/schema/dependencies';
-import { serializeSoundEvent } from '../domain/kv3/serializer';
+import { serializeSoundEvent, SerializationError } from '../domain/kv3/serializer';
 import { parseKv3SoundEventDocument } from '../domain/kv3/parser';
 import type { Kv3SoundEventDocument } from '../domain/kv3/types';
 import {
@@ -206,10 +206,18 @@ function syncCodeToEditor(
   custom: Record<string, any>,
   includeComments: boolean,
   origin: SyncOrigin = 'controls'
-) {
-  const code = generateCode(eventName, enabled, values, custom, includeComments);
-  useEditorStore.getState().setCodeFromControls(code, origin);
-  return code;
+): string | undefined {
+  try {
+    const code = generateCode(eventName, enabled, values, custom, includeComments);
+    useEditorStore.getState().setCodeFromControls(code, origin);
+    return code;
+  } catch (err) {
+    if (err instanceof SerializationError) {
+      useEditorStore.getState().setDiagnostics(err.diagnostics);
+      return undefined;
+    }
+    throw err;
+  }
 }
 
 // Debounced and dirty-checked localStorage adapter
@@ -817,8 +825,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         const includeComments = Boolean(persistedState.includeComments);
 
         normalizeDependencies(enabled, values);
-        const code = generateCode(safeEventName, enabled, values, custom, includeComments);
-        useEditorStore.getState().setCodeFromControls(code, 'init');
+        syncCodeToEditor(safeEventName, enabled, values, custom, includeComments, 'init');
 
         if (lang === 'en') {
           loadLanguage('en').then(() => {
