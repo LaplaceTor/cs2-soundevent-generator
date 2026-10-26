@@ -23,6 +23,8 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
   if (isNaN(curNum)) curNum = 0;
 
   const [localVal, setLocalVal] = React.useState<number>(curNum);
+  const [isInputFocused, setIsInputFocused] = React.useState(false);
+  const [draftString, setDraftString] = React.useState<string>(() => String(curNum));
   const rafRef = React.useRef<number | null>(null);
   const latestValRef = React.useRef<number>(curNum);
 
@@ -31,8 +33,11 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
     if (rafRef.current === null) {
       setLocalVal(curNum);
       latestValRef.current = curNum;
+      if (!isInputFocused) {
+        setDraftString(String(curNum));
+      }
     }
-  }, [curNum]);
+  }, [curNum, isInputFocused]);
 
   React.useEffect(() => {
     return () => {
@@ -46,6 +51,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
     let nextVal = parseFloat(e.target.value) || 0;
     if (hasDisableBtn && nextVal < 0) nextVal = 0;
     setLocalVal(nextVal);
+    setDraftString(String(nextVal));
     latestValRef.current = nextVal;
 
     if (rafRef.current === null) {
@@ -67,12 +73,29 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let num = parseFloat(e.target.value);
+    const raw = e.target.value;
+    setDraftString(raw);
+
+    const trimmed = raw.trim();
+    if (
+      trimmed === '' ||
+      trimmed === '-' ||
+      trimmed === '+' ||
+      trimmed === '.' ||
+      trimmed === '-.' ||
+      trimmed === '+.'
+    ) {
+      return;
+    }
+
+    let num = parseFloat(trimmed);
     if (isNaN(num)) return;
+
     if (onlyPositive && num < 0) num = 0;
     if (hasDisableBtn && num < 0 && num !== disableSentinel) {
       num = disableSentinel;
     }
+
     setLocalVal(num);
     latestValRef.current = num;
     if (rafRef.current !== null) {
@@ -80,6 +103,61 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
       rafRef.current = null;
     }
     onChange(num);
+  };
+
+  const handleNumberBlur = () => {
+    setIsInputFocused(false);
+    const trimmed = draftString.trim();
+    if (
+      trimmed === '' ||
+      trimmed === '-' ||
+      trimmed === '+' ||
+      trimmed === '.' ||
+      trimmed === '-.' ||
+      trimmed === '+.'
+    ) {
+      const fallback = 0;
+      setLocalVal(fallback);
+      setDraftString(String(fallback));
+      latestValRef.current = fallback;
+      onChange(fallback);
+      return;
+    }
+
+    let num = parseFloat(trimmed);
+    if (isNaN(num)) {
+      setDraftString(String(localVal));
+      return;
+    }
+
+    if (onlyPositive && num < 0) num = 0;
+    if (hasDisableBtn && num < 0 && num !== disableSentinel) {
+      num = disableSentinel;
+    }
+
+    setLocalVal(num);
+    setDraftString(String(num));
+    latestValRef.current = num;
+    onChange(num);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const numStep = parseFloat(step) || 0.01;
+      const current = parseFloat(draftString) || 0;
+      let next = e.key === 'ArrowUp' ? current + numStep : current - numStep;
+      if (onlyPositive && next < 0) next = 0;
+      if (hasDisableBtn && next < 0 && next !== disableSentinel) {
+        next = disableSentinel;
+      }
+      const precision = step.includes('.') ? (step.split('.')[1]?.length ?? 0) : 0;
+      next = parseFloat(next.toFixed(precision));
+      setLocalVal(next);
+      setDraftString(String(next));
+      latestValRef.current = next;
+      onChange(next);
+    }
   };
 
   const handleToggleDisable = () => {
@@ -91,6 +169,7 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
       rafRef.current = null;
     }
     setLocalVal(nextVal);
+    setDraftString(String(nextVal));
     latestValRef.current = nextVal;
     onChange(nextVal);
   };
@@ -145,13 +224,15 @@ export const FloatSliderControl: React.FC<FloatSliderControlProps> = ({
         onTouchEnd={handlePointerUp}
       />
       <input
-        type="number"
+        type="text"
+        inputMode="decimal"
         className="w-20 px-2 py-0.5 font-mono text-xs bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm outline-hidden focus:border-black dark:focus:border-white text-right"
-        value={displayNum}
-        step={step}
-        min={onlyPositive ? '0' : hasDisableBtn ? String(disableSentinel) : undefined}
+        value={draftString}
         aria-label={`${propKey} value`}
+        onFocus={() => setIsInputFocused(true)}
+        onBlur={handleNumberBlur}
         onChange={handleNumberChange}
+        onKeyDown={handleKeyDown}
       />
     </div>
   );

@@ -13,6 +13,87 @@ import { ArrayInputControl } from './controls/ArrayInputControl';
 import { CurveEditorControl } from './controls/CurveEditorControl';
 import { VsndWeightsControl } from './controls/VsndWeightsControl';
 
+interface FilesInputControlProps {
+  value: any;
+  onChange: (val: any) => void;
+  placeholder?: string;
+}
+
+const FilesInputControl: React.FC<FilesInputControlProps> = ({
+  value,
+  onChange,
+  placeholder,
+}) => {
+  const formatValue = (val: any) =>
+    Array.isArray(val) ? val.join(', ') : val !== undefined && val !== null ? String(val) : '';
+
+  const [isFocused, setIsFocused] = React.useState(false);
+  const [draft, setDraft] = React.useState(() => formatValue(value));
+
+  React.useEffect(() => {
+    if (!isFocused) {
+      setDraft(formatValue(value));
+    }
+  }, [value, isFocused]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setDraft(raw);
+
+    if (raw.trim() === '') {
+      onChange(Array.isArray(value) ? [] : '');
+      return;
+    }
+
+    if (raw.includes(',')) {
+      const items = raw
+        .split(',')
+        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+      onChange(items);
+    } else {
+      const trimmed = raw.trim().replace(/^["']|["']$/g, '');
+      onChange(Array.isArray(value) ? (trimmed ? [trimmed] : []) : trimmed);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (draft.trim() === '') {
+      const emptyVal = Array.isArray(value) ? [] : '';
+      onChange(emptyVal);
+      setDraft('');
+      return;
+    }
+
+    if (draft.includes(',')) {
+      const items = draft
+        .split(',')
+        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+      onChange(items);
+      setDraft(items.join(', '));
+    } else {
+      const trimmed = draft.trim().replace(/^["']|["']$/g, '');
+      const finalVal = Array.isArray(value) ? (trimmed ? [trimmed] : []) : trimmed;
+      onChange(finalVal);
+      setDraft(Array.isArray(finalVal) ? finalVal.join(', ') : finalVal);
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      value={draft}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+      onChange={handleChange}
+      placeholder={placeholder || 'sounds/...'}
+      className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
+    />
+  );
+};
+
 interface PropertyRowProps {
   propKey: string;
 }
@@ -157,15 +238,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
         );
       case 'files':
         return (
-          <input
-            type="text"
-            value={Array.isArray(value) ? value.join(', ') : String(value || '')}
-            onChange={(e) => {
-              const val = e.target.value;
-              handleValueChange(val.includes(',') ? val.split(',').map((s) => s.trim()) : val);
-            }}
+          <FilesInputControl
+            value={value}
+            onChange={handleValueChange}
             placeholder="sounds/..."
-            className="w-full px-2 py-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white placeholder:text-gray-400"
           />
         );
       default:
