@@ -227,6 +227,69 @@ function computePchipTangents(points: number[][]): number[] {
   return tangents;
 }
 
+function generateFadeCurve(
+  pts: number[][],
+  x0: number,
+  xEnd: number,
+  spanX: number,
+  direction: 'in' | 'out'
+): number[][] {
+  const n = pts.length;
+  const rawStart = pts[0]![1]!;
+  const rawEnd = pts[n - 1]![1]!;
+  let yStart: number;
+  let yEnd: number;
+
+  if (direction === 'in') {
+    if (rawStart !== rawEnd) {
+      yStart = Math.min(rawStart, rawEnd);
+      yEnd = Math.max(rawStart, rawEnd);
+    } else if (rawStart > 0) {
+      yStart = 0.0;
+      yEnd = rawStart;
+    } else if (rawStart < 0) {
+      yStart = rawStart;
+      yEnd = 0.0;
+    } else {
+      yStart = 0.0;
+      yEnd = 1.0;
+    }
+  } else {
+    if (rawStart !== rawEnd) {
+      yStart = Math.max(rawStart, rawEnd);
+      yEnd = Math.min(rawStart, rawEnd);
+    } else if (rawStart > 0) {
+      yStart = rawStart;
+      yEnd = 0.0;
+    } else if (rawStart < 0) {
+      yStart = 0.0;
+      yEnd = rawStart;
+    } else {
+      yStart = 1.0;
+      yEnd = 0.0;
+    }
+  }
+
+  const dy = yEnd - yStart;
+
+  if (n === 2) {
+    return [
+      [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3],
+      [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1],
+    ];
+  }
+
+  return pts.map((p, i) => {
+    if (i === 0) return [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3];
+    if (i === n - 1) return [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1];
+
+    const t = (p[0]! - x0) / spanX;
+    const yVal = roundFloat(yStart + dy * (3 * t * t - 2 * t * t * t), 2);
+    const slope = (dy * 6 * t * (1 - t)) / spanX;
+    return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
+  });
+}
+
 export function generateCurveFromEndpoints(presetKey: string, currentPoints: number[][] = []): number[][] {
   let pts: number[][] = [];
   if (Array.isArray(currentPoints) && currentPoints.length > 0) {
@@ -336,89 +399,11 @@ export function generateCurveFromEndpoints(presetKey: string, currentPoints: num
       });
     }
 
-    case 'fade_in': {
-      const rawStart = pts[0]![1]!;
-      const rawEnd = pts[n - 1]![1]!;
-      let yStart: number;
-      let yEnd: number;
+    case 'fade_in':
+      return generateFadeCurve(pts, x0, xEnd, spanX, 'in');
 
-      if (rawStart !== rawEnd) {
-        yStart = Math.min(rawStart, rawEnd);
-        yEnd = Math.max(rawStart, rawEnd);
-      } else {
-        if (rawStart > 0) {
-          yStart = 0.0;
-          yEnd = rawStart;
-        } else if (rawStart < 0) {
-          yStart = rawStart;
-          yEnd = 0.0;
-        } else {
-          yStart = 0.0;
-          yEnd = 1.0;
-        }
-      }
-
-      const dy = yEnd - yStart;
-
-      if (n === 2) {
-        return [
-          [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3],
-          [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1],
-        ];
-      }
-
-      return pts.map((p, i) => {
-        if (i === 0) return [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3];
-        if (i === n - 1) return [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1];
-
-        const t = (p[0]! - x0) / spanX;
-        const yVal = roundFloat(yStart + dy * (3 * t * t - 2 * t * t * t), 2);
-        const slope = (dy * 6 * t * (1 - t)) / spanX;
-        return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
-      });
-    }
-
-    case 'fade_out': {
-      const rawStart = pts[0]![1]!;
-      const rawEnd = pts[n - 1]![1]!;
-      let yStart: number;
-      let yEnd: number;
-
-      if (rawStart !== rawEnd) {
-        yStart = Math.max(rawStart, rawEnd);
-        yEnd = Math.min(rawStart, rawEnd);
-      } else {
-        if (rawStart > 0) {
-          yStart = rawStart;
-          yEnd = 0.0;
-        } else if (rawStart < 0) {
-          yStart = 0.0;
-          yEnd = rawStart;
-        } else {
-          yStart = 1.0;
-          yEnd = 0.0;
-        }
-      }
-
-      const dy = yEnd - yStart;
-
-      if (n === 2) {
-        return [
-          [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3],
-          [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1],
-        ];
-      }
-
-      return pts.map((p, i) => {
-        if (i === 0) return [roundFloat(x0, 2), roundFloat(yStart, 2), 0.0, 0.0, 2, 3];
-        if (i === n - 1) return [roundFloat(xEnd, 2), roundFloat(yEnd, 2), 0.0, 0.0, 1, 1];
-
-        const t = (p[0]! - x0) / spanX;
-        const yVal = roundFloat(yStart + dy * (3 * t * t - 2 * t * t * t), 2);
-        const slope = (dy * 6 * t * (1 - t)) / spanX;
-        return [roundFloat(p[0]!, 2), yVal, slope, slope, 1, 1];
-      });
-    }
+    case 'fade_out':
+      return generateFadeCurve(pts, x0, xEnd, spanX, 'out');
 
     case 'flat': {
       return pts.map((p, i) => {

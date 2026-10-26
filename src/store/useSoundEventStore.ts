@@ -53,6 +53,17 @@ export interface SoundEventState {
   importShareHash: (hash: string) => boolean;
 }
 
+// Helper to initialize default property value safely
+export function initDefaultPropertyValue(key: string, values: Record<string, any>) {
+  if (!(key in values) || values[key] === undefined) {
+    values[key] =
+      DEFAULTS[key] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[key])) : 0;
+  }
+  if (key === 'base' && typeof values[key] !== 'string') {
+    values[key] = '';
+  }
+}
+
 // Helper to ensure parent property is properly activated when a child property is enabled
 function activateParentProperty(parentKey: string, values: Record<string, any>) {
   const parentSpec = SPECS[parentKey];
@@ -84,36 +95,10 @@ function activateParentProperty(parentKey: string, values: Record<string, any>) 
 // Helper: strictly enforce min/max pairs and dependencies
 export function normalizeDependencies(
   enabled: Set<string>,
-  values: Record<string, any>
+  values: Record<string, any>,
+  targetKey?: string
 ) {
-  // 1. Min/Max Pairs (min <= max)
-  for (const key of Array.from(enabled)) {
-    const pair = MIN_MAX_MAP.get(key);
-    if (pair) {
-      enabled.add(pair.partner);
-      if (!(pair.partner in values) || values[pair.partner] === undefined) {
-        values[pair.partner] = DEFAULTS[pair.partner] ?? 0;
-      }
-      const minKey = pair.role === 'min' ? key : pair.partner;
-      const maxKey = pair.role === 'max' ? key : pair.partner;
-      const minVal = Number(values[minKey]);
-      const maxVal = Number(values[maxKey]);
-      if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
-        values[maxKey] = minVal;
-      }
-    }
-
-    // Linked pairs (Enable partner too)
-    const linked = LINKED_PAIR_MAP.get(key);
-    if (linked) {
-      enabled.add(linked);
-      if (!(linked in values) || values[linked] === undefined) {
-        values[linked] = DEFAULTS[linked] ?? 0;
-      }
-    }
-  }
-
-  // 2. Toggle dependencies
+  // 1. Toggle dependencies: parent active -> cascade enable children; parent falsy -> disable children
   for (const [parentKey, children] of Object.entries(TOGGLE_DEPENDENTS)) {
     if (enabled.has(parentKey)) {
       const pVal = values[parentKey];
@@ -132,11 +117,19 @@ export function normalizeDependencies(
             if (cLinked) enabled.delete(cLinked);
           }
         }
+      } else {
+        const hasAnyChild = children.some((ck) => enabled.has(ck));
+        if (!hasAnyChild) {
+          for (const ck of children) {
+            enabled.add(ck);
+            initDefaultPropertyValue(ck, values);
+          }
+        }
       }
     }
   }
 
-  // 3. If any child is enabled, parent MUST be enabled & active
+  // 2. If any child is enabled, parent MUST be enabled & active
   for (const key of Array.from(enabled)) {
     const parentKeys = CHILD_TO_PARENT_MAP.get(key);
     if (parentKeys && parentKeys.length > 0) {
@@ -146,8 +139,36 @@ export function normalizeDependencies(
       if (!hasActiveParent) {
         const primaryParent = parentKeys[0]!;
         enabled.add(primaryParent);
+        initDefaultPropertyValue(primaryParent, values);
         activateParentProperty(primaryParent, values);
       }
+    }
+  }
+
+  // 3. Min/Max Pairs (min <= max) and Linked Pairs
+  for (const key of Array.from(enabled)) {
+    const pair = MIN_MAX_MAP.get(key);
+    if (pair) {
+      enabled.add(pair.partner);
+      initDefaultPropertyValue(pair.partner, values);
+      const minKey = pair.role === 'min' ? key : pair.partner;
+      const maxKey = pair.role === 'max' ? key : pair.partner;
+      const minVal = Number(values[minKey]);
+      const maxVal = Number(values[maxKey]);
+      if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
+        if (targetKey === maxKey) {
+          values[minKey] = maxVal;
+        } else {
+          values[maxKey] = minVal;
+        }
+      }
+    }
+
+    // Linked pairs (Enable partner too)
+    const linked = LINKED_PAIR_MAP.get(key);
+    if (linked) {
+      enabled.add(linked);
+      initDefaultPropertyValue(linked, values);
     }
   }
 
@@ -323,63 +344,9 @@ export const useSoundEventStore = create<SoundEventState>()(
           produce((state: SoundEventState) => {
             if (enabled) {
               state.enabledProperties.add(key);
-              if (!(key in state.propertyValues) || state.propertyValues[key] === undefined) {
-                state.propertyValues[key] =
-                  DEFAULTS[key] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[key])) : 0;
-              }
-              if (key === 'base' && typeof state.propertyValues[key] !== 'string') {
-                state.propertyValues[key] = '';
-              }
-
-              // Parent toggle
-              const children = TOGGLE_DEPENDENTS[key];
-              if (children) {
-                state.propertyValues[key] = true;
-                for (const ck of children) {
-                  state.enabledProperties.add(ck);
-                  if (!(ck in state.propertyValues) || state.propertyValues[ck] === undefined) {
-                    state.propertyValues[ck] =
-                      DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
-                  }
-                }
-              }
-
-              // Child property
-              const parentKeys = CHILD_TO_PARENT_MAP.get(key);
-              if (parentKeys && parentKeys.length > 0) {
-                const hasActiveParent = parentKeys.some(
-                  (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
-                );
-                if (!hasActiveParent) {
-                  const primaryParent = parentKeys[0]!;
-                  state.enabledProperties.add(primaryParent);
-                  activateParentProperty(primaryParent, state.propertyValues);
-                }
-              }
-
-              // Min-Max pair
-              const pair = MIN_MAX_MAP.get(key);
-              if (pair) {
-                state.enabledProperties.add(pair.partner);
-                if (!(pair.partner in state.propertyValues) || state.propertyValues[pair.partner] === undefined) {
-                  state.propertyValues[pair.partner] = DEFAULTS[pair.partner] ?? 0;
-                }
-                const minKey = pair.role === 'min' ? key : pair.partner;
-                const maxKey = pair.role === 'max' ? key : pair.partner;
-                const minVal = Number(state.propertyValues[minKey]);
-                const maxVal = Number(state.propertyValues[maxKey]);
-                if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
-                  state.propertyValues[maxKey] = minVal;
-                }
-              }
-
-              // Linked pair
-              const linked = LINKED_PAIR_MAP.get(key);
-              if (linked) {
-                state.enabledProperties.add(linked);
-                if (!(linked in state.propertyValues) || state.propertyValues[linked] === undefined) {
-                  state.propertyValues[linked] = DEFAULTS[linked] ?? 0;
-                }
+              initDefaultPropertyValue(key, state.propertyValues);
+              if (key in TOGGLE_DEPENDENTS) {
+                activateParentProperty(key, state.propertyValues);
               }
             } else {
               state.enabledProperties.delete(key);
@@ -431,7 +398,7 @@ export const useSoundEventStore = create<SoundEventState>()(
               useEditorStore.getState().clearFieldValidationError(key);
             }
 
-            normalizeDependencies(state.enabledProperties, state.propertyValues);
+            normalizeDependencies(state.enabledProperties, state.propertyValues, key);
             syncCodeToEditor(
               state.eventName,
               state.enabledProperties,
@@ -455,76 +422,18 @@ export const useSoundEventStore = create<SoundEventState>()(
               useEditorStore.getState().clearFieldValidationError(key);
             }
 
-            // Parent toggle turned true/false
-            const children = TOGGLE_DEPENDENTS[key];
-            if (children) {
-              const isFalse = !isParentActive(key, val);
-              if (isFalse) {
-                for (const ck of children) {
-                  const parents = CHILD_TO_PARENT_MAP.get(ck);
-                  const hasOtherActiveParent = parents?.some(
-                    (pk) => pk !== key && state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
-                  );
-                  if (!hasOtherActiveParent) {
-                    state.enabledProperties.delete(ck);
-                    const childPair = MIN_MAX_MAP.get(ck);
-                    if (childPair) state.enabledProperties.delete(childPair.partner);
-                    const childLinked = LINKED_PAIR_MAP.get(ck);
-                    if (childLinked) state.enabledProperties.delete(childLinked);
-                  }
-                }
-              } else {
-                for (const ck of children) {
-                  state.enabledProperties.add(ck);
-                  if (!(ck in state.propertyValues) || state.propertyValues[ck] === undefined) {
-                    state.propertyValues[ck] =
-                      DEFAULTS[ck] !== undefined ? JSON.parse(JSON.stringify(DEFAULTS[ck])) : 0;
-                  }
-                }
-              }
-            }
-
-            // Child editing ensures parent is true
-            const parentKeys = CHILD_TO_PARENT_MAP.get(key);
-            if (parentKeys && parentKeys.length > 0) {
-              const hasActiveParent = parentKeys.some(
-                (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
-              );
-              if (!hasActiveParent) {
-                const primaryParent = parentKeys[0]!;
-                state.enabledProperties.add(primaryParent);
-                activateParentProperty(primaryParent, state.propertyValues);
-              }
-            }
-
-            // Min-Max constraint
-            const pair = MIN_MAX_MAP.get(key);
-            if (pair) {
-              const numVal = Number(val);
-              if (!isNaN(numVal)) {
-                const partnerVal = Number(state.propertyValues[pair.partner]);
-                if (!isNaN(partnerVal)) {
-                  if (pair.role === 'min' && numVal > partnerVal) {
-                    state.propertyValues[pair.partner] = numVal;
-                  } else if (pair.role === 'max' && numVal < partnerVal) {
-                    state.propertyValues[pair.partner] = numVal;
-                  }
-                }
-              }
-            }
-
             // Type needs value check
             if (key === 'type') {
               const needsVal = typeNeedsValue(val);
               if (needsVal && !state.enabledProperties.has('value')) {
                 state.enabledProperties.add('value');
-                state.propertyValues['value'] = DEFAULTS['value'] ?? 1.0;
+                initDefaultPropertyValue('value', state.propertyValues);
               } else if (!needsVal && state.enabledProperties.has('value')) {
                 state.enabledProperties.delete('value');
               }
             }
 
-            normalizeDependencies(state.enabledProperties, state.propertyValues);
+            normalizeDependencies(state.enabledProperties, state.propertyValues, key);
             syncCodeToEditor(
               state.eventName,
               state.enabledProperties,

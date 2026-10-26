@@ -236,12 +236,11 @@ export function useCurveCanvas({
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
 
-    function onPointerDown(e: PointerEvent) {
-      if (!transformersRef.current) return;
+    function findHitPoint(pos: { x: number; y: number }, radius = 22): number {
+      if (!transformersRef.current) return -1;
       const { toScreenX, toScreenY } = transformersRef.current;
-      const pos = getMousePos(e);
       let hit = -1;
-      let minDist = 22; // Generous hit radius for ease of grabbing
+      let minDist = radius;
 
       pointsRef.current.forEach((p, idx) => {
         const sx = toScreenX(p[0]!);
@@ -252,6 +251,14 @@ export function useCurveCanvas({
           hit = idx;
         }
       });
+
+      return hit;
+    }
+
+    function onPointerDown(e: PointerEvent) {
+      if (!transformersRef.current) return;
+      const pos = getMousePos(e);
+      const hit = findHitPoint(pos, 22);
 
       if (hit !== -1) {
         activeIdxRef.current = hit;
@@ -272,7 +279,7 @@ export function useCurveCanvas({
 
     function onPointerMove(e: PointerEvent) {
       if (!transformersRef.current) return;
-      const { toDataX, toDataY, toScreenX, toScreenY } = transformersRef.current;
+      const { toDataX, toDataY } = transformersRef.current;
       const pos = getMousePos(e);
 
       if (activeIdxRef.current !== -1) {
@@ -315,17 +322,7 @@ export function useCurveCanvas({
           onLiveDragRef.current(currentPts, activeIdx);
         }
       } else {
-        let hit = -1;
-        let minDist = 22;
-        pointsRef.current.forEach((p, idx) => {
-          const sx = toScreenX(p[0]!);
-          const sy = toScreenY(p[1]!);
-          const dist = Math.hypot(sx - pos.x, sy - pos.y);
-          if (dist < minDist) {
-            minDist = dist;
-            hit = idx;
-          }
-        });
+        const hit = findHitPoint(pos, 22);
 
         if (hit !== hoverIdxRef.current) {
           hoverIdxRef.current = hit;
@@ -380,20 +377,8 @@ export function useCurveCanvas({
     function onContextMenu(e: MouseEvent) {
       e.preventDefault();
       if (!transformersRef.current) return;
-      const { toScreenX, toScreenY } = transformersRef.current;
       const pos = getMousePos(e);
-      let hit = -1;
-      let minDist = 20;
-
-      pointsRef.current.forEach((p, idx) => {
-        const sx = toScreenX(p[0]!);
-        const sy = toScreenY(p[1]!);
-        const dist = Math.hypot(sx - pos.x, sy - pos.y);
-        if (dist < minDist) {
-          minDist = dist;
-          hit = idx;
-        }
-      });
+      const hit = findHitPoint(pos, 20);
 
       if (hit !== -1) {
         if (pointsRef.current.length <= 2) {
