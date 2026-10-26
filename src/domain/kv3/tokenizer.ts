@@ -89,11 +89,28 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
     if (ch === '/' && input[i + 1] === '*') {
       const endCmt = input.indexOf('*/', i + 2);
       if (endCmt === -1) {
+        const cmtContent = input.substring(i);
+        const linesCount = cmtContent.split('\n').length - 1;
+        line += linesCount;
+        if (linesCount === 0) {
+          column += cmtContent.replace(/\r/g, '').length;
+        } else {
+          const lastNlIdx = cmtContent.lastIndexOf('\n');
+          const lastLine = cmtContent.substring(lastNlIdx + 1).replace(/\r/g, '');
+          column = 1 + lastLine.length;
+        }
         i = input.length;
       } else {
         const cmtContent = input.substring(i, endCmt + 2);
         const linesCount = cmtContent.split('\n').length - 1;
         line += linesCount;
+        if (linesCount === 0) {
+          column += cmtContent.replace(/\r/g, '').length;
+        } else {
+          const lastNlIdx = cmtContent.lastIndexOf('\n');
+          const lastLine = cmtContent.substring(lastNlIdx + 1).replace(/\r/g, '');
+          column = 1 + lastLine.length;
+        }
         i = endCmt + 2;
       }
       continue;
@@ -180,7 +197,22 @@ export function tokenizeKv3(input: string): { tokens: Token[]; diagnostics: Kv3D
         }
 
         if (c === '\\' && i + 1 < input.length) {
-          strVal += input[i + 1];
+          const nextChar = input[i + 1];
+          let escaped = nextChar;
+          if (nextChar === 'n') {
+            escaped = '\n';
+          } else if (nextChar === 't') {
+            escaped = '\t';
+          } else if (nextChar === 'r') {
+            escaped = '\r';
+          } else if (nextChar === '"') {
+            escaped = '"';
+          } else if (nextChar === "'") {
+            escaped = "'";
+          } else if (nextChar === '\\') {
+            escaped = '\\';
+          }
+          strVal += escaped;
           i += 2;
           column += 2;
           continue;

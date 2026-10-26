@@ -551,11 +551,18 @@ export function validateSoundEventProperties(
       // Normalize values if valid
       const spec = SPECS[key];
       if (spec) {
-        if (spec.kind === 'float_bool' || spec.kind === 'int_bool') {
-          normalizedProperties[key] =
+        if (spec.kind === 'float_bool') {
+          const isTrue =
             typeof val === 'number'
               ? val > 0
               : val === true || val === '1' || val === '1.0' || val === 'true';
+          normalizedProperties[key] = isTrue ? 1.0 : 0.0;
+        } else if (spec.kind === 'int_bool') {
+          const isTrue =
+            typeof val === 'number'
+              ? val > 0
+              : val === true || val === '1' || val === '1.0' || val === 'true';
+          normalizedProperties[key] = isTrue ? 1 : 0;
         } else if (spec.kind === 'bool' || spec.kind === 'string_bool') {
           normalizedProperties[key] =
             typeof val === 'string' ? val === 'true' || val === '1' : Boolean(val);

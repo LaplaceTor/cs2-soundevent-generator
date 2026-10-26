@@ -118,6 +118,7 @@ export function parseKv3SoundEventDocument(input: string): {
       // Check leading comma
       if (peek()?.type === 'COMMA') {
         diagnostics.push({ code: 'LEADING_ARRAY_COMMA', line: peek()!.line, column: peek()!.column, stage: 'syntax' });
+        advance();
       }
 
       const elements: Kv3Value[] = [];
