@@ -36,6 +36,27 @@ export function escapeKv3String(str: any): string {
     .replace(/\n/g, '\\n');
 }
 
+export function formatKv3Float(val: any, key: string): string {
+  const num = Number(val);
+  if (isNaN(num) || !isFinite(num)) {
+    throw new TypeError(`Invalid numeric value for property "${key}": ${String(val)}`);
+  }
+  const str = num.toString();
+  return str.includes('.') ? str : str + '.0';
+}
+
+export function formatKv3FloatVector(val: any, key: string, expectedDim: number): string {
+  if (!Array.isArray(val) || val.length !== expectedDim) {
+    throw new TypeError(
+      `Invalid vector${expectedDim} dimension for property "${key}": expected ${expectedDim} elements, got ${
+        Array.isArray(val) ? val.length : typeof val
+      }`
+    );
+  }
+  const formatted = val.map((n) => formatKv3Float(n, key));
+  return `[ ${formatted.join(', ')} ]`;
+}
+
 export function formatKv3Value(key: string, val: any, spec?: PropertySpec): string {
   const kind = spec?.kind ?? 'unknown';
 
@@ -59,51 +80,15 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   }
 
   if (kind === 'float') {
-    const num = Number(val);
-    if (isNaN(num) || !isFinite(num)) {
-      throw new TypeError(`Invalid numeric value for property "${key}": ${String(val)}`);
-    }
-    let str = num.toString();
-    if (!str.includes('.')) str += '.0';
-    return str;
+    return formatKv3Float(val, key);
   }
 
   if (kind === 'vector3') {
-    if (!Array.isArray(val) || val.length !== 3) {
-      throw new TypeError(
-        `Invalid vector3 dimension for property "${key}": expected 3 elements, got ${
-          Array.isArray(val) ? val.length : typeof val
-        }`
-      );
-    }
-    const formatted = val.map((n) => {
-      const num = Number(n);
-      if (isNaN(num) || !isFinite(num)) {
-        throw new TypeError(`Invalid numeric element in vector3 "${key}": ${String(n)}`);
-      }
-      const s = num.toString();
-      return s.includes('.') ? s : s + '.0';
-    });
-    return `[ ${formatted.join(', ')} ]`;
+    return formatKv3FloatVector(val, key, 3);
   }
 
   if (kind === 'vector2') {
-    if (!Array.isArray(val) || val.length !== 2) {
-      throw new TypeError(
-        `Invalid vector2 dimension for property "${key}": expected 2 elements, got ${
-          Array.isArray(val) ? val.length : typeof val
-        }`
-      );
-    }
-    const formatted = val.map((n) => {
-      const num = Number(n);
-      if (isNaN(num) || !isFinite(num)) {
-        throw new TypeError(`Invalid numeric element in vector2 "${key}": ${String(n)}`);
-      }
-      const s = num.toString();
-      return s.includes('.') ? s : s + '.0';
-    });
-    return `[ ${formatted.join(', ')} ]`;
+    return formatKv3FloatVector(val, key, 2);
   }
 
   if (kind === 'vsnd_weights') {
@@ -116,11 +101,10 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
     }
     const formatted = val.map((n) => {
       const num = Number(n);
-      if (isNaN(num) || !isFinite(num) || num < 0) {
+      if (num < 0) {
         throw new TypeError(`Invalid weight in vsnd_weights "${key}": ${String(n)}`);
       }
-      const s = num.toString();
-      return s.includes('.') ? s : s + '.0';
+      return formatKv3Float(n, key);
     });
     return `[ ${formatted.join(', ')} ]`;
   }
@@ -136,15 +120,8 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
 
   if (kind === 'array_float') {
     if (Array.isArray(val)) {
-      const formatted = val.map((n) => {
-        const num = Number(n);
-        if (isNaN(num) || !isFinite(num)) {
-          throw new TypeError(`Invalid float in array_float "${key}": ${String(n)}`);
-        }
-        const s = num.toString();
-        return s.includes('.') ? s : s + '.0';
-      });
-      if (formatted.length === 0) return '[ ]';
+      if (val.length === 0) return '[ ]';
+      const formatted = val.map((n) => formatKv3Float(n, key));
       return `[ ${formatted.join(', ')} ]`;
     }
     return '[ ]';
@@ -172,13 +149,8 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
       }
       const rowStr = row
         .map((n: any, idx: number) => {
-          const num = Number(n);
-          if (isNaN(num) || !isFinite(num)) {
-            throw new TypeError(`Invalid numeric value in curve point of "${key}": ${String(n)}`);
-          }
-          if (idx >= 4) return num.toFixed(1);
-          const s = num.toString();
-          return s.includes('.') ? s : s + '.0';
+          const formatted = formatKv3Float(n, key);
+          return idx >= 4 ? Number(n).toFixed(1) : formatted;
         })
         .join(', ');
       return `\t\t\t[ ${rowStr} ],`;
@@ -187,11 +159,7 @@ export function formatKv3Value(key: string, val: any, spec?: PropertySpec): stri
   }
 
   if (typeof val === 'number') {
-    if (isNaN(val) || !isFinite(val)) {
-      throw new TypeError(`Invalid numeric value for property "${key}": ${String(val)}`);
-    }
-    const str = val.toString();
-    return str.includes('.') ? str : str + '.0';
+    return formatKv3Float(val, key);
   }
 
   if (typeof val === 'boolean') {
