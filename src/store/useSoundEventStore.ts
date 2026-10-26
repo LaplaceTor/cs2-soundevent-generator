@@ -144,7 +144,7 @@ export function normalizeDependencies(
         (pk) => enabled.has(pk) && isParentActive(pk, values[pk])
       );
       if (!hasActiveParent) {
-        const primaryParent = parentKeys[0];
+        const primaryParent = parentKeys[0]!;
         enabled.add(primaryParent);
         activateParentProperty(primaryParent, values);
       }
@@ -343,7 +343,7 @@ export const useSoundEventStore = create<SoundEventState>()(
                   (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
                 );
                 if (!hasActiveParent) {
-                  const primaryParent = parentKeys[0];
+                  const primaryParent = parentKeys[0]!;
                   state.enabledProperties.add(primaryParent);
                   activateParentProperty(primaryParent, state.propertyValues);
                 }
@@ -483,7 +483,7 @@ export const useSoundEventStore = create<SoundEventState>()(
                 (pk) => state.enabledProperties.has(pk) && isParentActive(pk, state.propertyValues[pk])
               );
               if (!hasActiveParent) {
-                const primaryParent = parentKeys[0];
+                const primaryParent = parentKeys[0]!;
                 state.enabledProperties.add(primaryParent);
                 activateParentProperty(primaryParent, state.propertyValues);
               }

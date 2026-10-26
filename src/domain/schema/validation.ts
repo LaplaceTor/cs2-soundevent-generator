@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { SPECS, typeNeedsValue } from './specs';
 import {
-  TOGGLE_DEPENDENTS,
   MIN_MAX_PAIRS,
   CHILD_TO_PARENT_MAP,
   isParentActive,
@@ -598,8 +597,8 @@ export function validateSoundEventProperties(
       const hasActiveParent = parentKeys.some((parentKey) =>
         isParentActive(parentKey, properties[parentKey])
       );
-      if (!hasActiveParent) {
-        const primaryParent = parentKeys[0];
+      if (!hasActiveParent && parentKeys.length > 0) {
+        const primaryParent = parentKeys[0]!;
         const loc = locations[childKey] ?? { line: 1, column: 1 };
         const diag: Kv3Diagnostic = {
           code: 'CHILD_MISSING_PARENT',

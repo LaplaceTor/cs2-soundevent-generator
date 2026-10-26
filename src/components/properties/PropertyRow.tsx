@@ -52,7 +52,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
   const pairInfo = MIN_MAX_MAP.get(propKey);
   const linkedPartner = LINKED_PAIR_MAP.get(propKey);
   const children = TOGGLE_DEPENDENTS[propKey];
-  const parentKey = CHILD_TO_PARENT_MAP.get(propKey);
+  const parentKeys = CHILD_TO_PARENT_MAP.get(propKey);
 
   const label = String(t(`labels.${propKey}`) || propKey);
   const desc = String(t(`tooltips.${propKey}`) || '');
@@ -237,10 +237,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({ propKey }) 
                   ↱ PARENT
                 </span>
               )}
-              {parentKey && (
+              {parentKeys && parentKeys.length > 0 && (
                 <span
                   className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/50 select-none cursor-help"
-                  title={t('badges.childOf', { parent: parentKey })}
+                  title={t('badges.childOf', { parent: parentKeys.join(' / ') })}
                 >
                   ↳ SUB
                 </span>
