@@ -368,7 +368,6 @@ export const LeftConfigPanel: React.FC = () => {
               >
                 {t('ui.presetLabel')}
               </label>
-              <span className="text-[10px] font-mono text-gray-400">PRESET</span>
             </div>
 
             {/* Row 1 Controls: Preset Select + Reset Btn + Event Name Input */}
@@ -432,7 +431,6 @@ export const LeftConfigPanel: React.FC = () => {
                 >
                   {t('ui.eventIdentifier')}
                 </label>
-                <span className="text-[10px] font-mono text-gray-400">KV3</span>
               </div>
 
               {/* Event Name Input (glides between Line 2 in relaxed and Line 1 in compact) */}
