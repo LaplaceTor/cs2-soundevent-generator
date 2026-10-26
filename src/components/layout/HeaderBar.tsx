@@ -1,7 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart } from 'lucide-react';
+import { Heart, Sun, Moon } from 'lucide-react';
 import { useSoundEventStore } from '@/store/useSoundEventStore';
+
+const SUPPORT_URLS: Record<'zh' | 'en', string> = {
+  zh: 'https://afdian.com/a/laplacetor',
+  en: 'https://ko-fi.com/R5S426JG8P',
+};
+
+const HEADER_ACTION_CLASS =
+  'h-7 px-2.5 inline-flex items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono text-xs font-medium text-black dark:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer no-underline';
 
 export const HeaderBar: React.FC = () => {
   const { t } = useTranslation();
@@ -34,14 +42,14 @@ export const HeaderBar: React.FC = () => {
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
         {/* Support Developer Button */}
         <a
-          href={lang === 'zh' ? 'https://afdian.com/a/laplacetor' : 'https://ko-fi.com/R5S426JG8P'}
+          href={SUPPORT_URLS[lang] || SUPPORT_URLS.en}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer text-black dark:text-white no-underline"
+          className={HEADER_ACTION_CLASS}
           title={t('ui.supportMe')}
           aria-label={t('ui.supportMe')}
         >
-          <Heart className="w-3 h-3 text-red-500 fill-current" aria-hidden="true" />
+          <Heart className="w-3.5 h-3.5 text-red-500 fill-current shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline">{t('ui.supportMe')}</span>
         </a>
 
@@ -49,7 +57,7 @@ export const HeaderBar: React.FC = () => {
         <button
           type="button"
           onClick={handleLangToggle}
-          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          className={HEADER_ACTION_CLASS}
           title={t('ui.langToggle')}
           aria-label={t('ui.langToggle')}
         >
@@ -60,11 +68,15 @@ export const HeaderBar: React.FC = () => {
         <button
           type="button"
           onClick={handleThemeToggle}
-          className="py-1 px-2 border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-mono font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          className={HEADER_ACTION_CLASS}
           title={t('ui.themeToggle')}
           aria-label={t('ui.themeToggle')}
         >
-          {theme === 'dark' ? '☀️' : '🌙'}
+          {theme === 'dark' ? (
+            <Sun className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <Moon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          )}
         </button>
       </div>
     </header>

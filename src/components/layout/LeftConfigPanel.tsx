@@ -9,6 +9,19 @@ import { PropertyGroupAccordion } from '@/components/properties/PropertyGroupAcc
 import { RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
+const MIN_TRANSITION_MS = 100;
+const MAX_TRANSITION_MS = 360;
+const DEFAULT_TRANSITION_MS = 280;
+const V_MIN = 0.15; // px/ms
+const V_MAX = 2.2; // px/ms
+
+function velocityToDuration(velocityPxPerMs: number): number {
+  const clamped = Math.min(Math.max(velocityPxPerMs, V_MIN), V_MAX);
+  const t = (clamped - V_MIN) / (V_MAX - V_MIN);
+  const eased = 1 - Math.pow(1 - t, 1.6);
+  return Math.round(MAX_TRANSITION_MS - eased * (MAX_TRANSITION_MS - MIN_TRANSITION_MS));
+}
+
 export const LeftConfigPanel: React.FC = () => {
   const { t } = useTranslation();
   const applyPreset = useSoundEventStore((s) => s.applyPreset);
@@ -33,6 +46,15 @@ export const LeftConfigPanel: React.FC = () => {
   const [fullHeaderHeight, setFullHeaderHeight] = useState(310);
   const isScrolledDownRef = useRef(isScrolledDown);
   isScrolledDownRef.current = isScrolledDown;
+
+  const lastScrollTopRef = useRef(0);
+  const lastScrollTimeRef = useRef(0);
+  const lastWheelVelocityRef = useRef({ v: 0, time: 0 });
+  const currentVelocityRef = useRef(0.5);
+
+  const transitionDurationRef = useRef(DEFAULT_TRANSITION_MS);
+  const activeBaseDurationRef = useRef(DEFAULT_TRANSITION_MS);
+  const transitionStartTimeRef = useRef(0);
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const measureFullTabsRef = useRef<HTMLDivElement>(null);
@@ -74,18 +96,81 @@ export const LeftConfigPanel: React.FC = () => {
   const exceedsOneThird = fullHeaderHeight > viewportHeight / 3;
   const isSimplified = exceedsOneThird && isScrolledDown;
 
+  const recordScrollVelocity = useCallback((currentScrollTop: number) => {
+    const now = performance.now();
+    const dt = now - lastScrollTimeRef.current;
+    const dy = Math.abs(currentScrollTop - lastScrollTopRef.current);
+    lastScrollTopRef.current = currentScrollTop;
+    lastScrollTimeRef.current = now;
+
+    let instV = 0;
+    if (dt > 0) {
+      if (dt < 120) {
+        instV = dy / dt;
+      } else {
+        instV = dy / 16.7;
+      }
+    }
+
+    if (now - lastWheelVelocityRef.current.time < 120) {
+      instV = Math.max(instV, lastWheelVelocityRef.current.v);
+    }
+
+    currentVelocityRef.current = Math.max(instV, currentVelocityRef.current * 0.4);
+
+    // If currently animating, scale up playbackRate if subsequent scroll is faster
+    const elapsed = now - transitionStartTimeRef.current;
+    if (elapsed < activeBaseDurationRef.current && fullHeaderRef.current) {
+      const targetDuration = velocityToDuration(currentVelocityRef.current);
+      if (targetDuration < activeBaseDurationRef.current) {
+        const desiredRate = Math.min(3.5, activeBaseDurationRef.current / targetDuration);
+        const anims = fullHeaderRef.current.getAnimations({ subtree: true });
+        anims.forEach((anim) => {
+          if (anim.playbackRate < desiredRate) {
+            anim.playbackRate = desiredRate;
+          }
+        });
+      }
+    }
+
+    return currentVelocityRef.current;
+  }, []);
+
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const scrollTop = e.currentTarget.scrollTop;
+    const v = recordScrollVelocity(scrollTop);
+
     if (scrollTop > 15) {
-      setIsScrolledDown(true);
+      if (!isScrolledDownRef.current) {
+        const duration = velocityToDuration(v);
+        transitionDurationRef.current = duration;
+        activeBaseDurationRef.current = duration;
+        transitionStartTimeRef.current = performance.now();
+        if (fullHeaderRef.current) {
+          fullHeaderRef.current.style.setProperty('--header-transition-ms', `${duration}ms`);
+        }
+        setIsScrolledDown(true);
+      }
     } else if (scrollTop <= 5) {
-      setIsScrolledDown(false);
+      if (isScrolledDownRef.current) {
+        const duration = velocityToDuration(v);
+        transitionDurationRef.current = duration;
+        activeBaseDurationRef.current = duration;
+        transitionStartTimeRef.current = performance.now();
+        if (fullHeaderRef.current) {
+          fullHeaderRef.current.style.setProperty('--header-transition-ms', `${duration}ms`);
+        }
+        setIsScrolledDown(false);
+      }
     }
-  }, []);
+  }, [recordScrollVelocity]);
 
   // Forward wheel and touch swipe from pinned header to groupsContainer
   const touchStartYRef = useRef(0);
   const handleHeaderWheel = useCallback((e: React.WheelEvent) => {
+    const now = performance.now();
+    const v = Math.abs(e.deltaY) / 16.7;
+    lastWheelVelocityRef.current = { v, time: now };
     const el = document.getElementById('groupsContainer');
     if (el) {
       el.scrollTop += e.deltaY;
@@ -104,6 +189,10 @@ export const LeftConfigPanel: React.FC = () => {
       const currentY = e.touches[0].clientY;
       const deltaY = touchStartYRef.current - currentY;
       touchStartYRef.current = currentY;
+      const now = performance.now();
+      const dt = Math.max(1, now - lastScrollTimeRef.current);
+      const v = Math.abs(deltaY) / dt;
+      lastWheelVelocityRef.current = { v, time: now };
       el.scrollTop += deltaY;
     }
   }, []);
@@ -130,6 +219,11 @@ export const LeftConfigPanel: React.FC = () => {
         typeof window !== 'undefined' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+      const duration = transitionDurationRef.current;
+      if (fullHeaderRef.current) {
+        fullHeaderRef.current.style.setProperty('--header-transition-ms', `${duration}ms`);
+      }
+
       flipRefs.current.forEach((el, key) => {
         const prev = lastRectsRef.current.get(key);
         if (!prev) return;
@@ -147,7 +241,7 @@ export const LeftConfigPanel: React.FC = () => {
               { transform: 'none' }
             ],
             {
-              duration: 320,
+              duration,
               easing: 'cubic-bezier(0.2, 0, 0, 1)'
             }
           );
@@ -158,7 +252,7 @@ export const LeftConfigPanel: React.FC = () => {
         flipRefs.current.forEach((el, key) => {
           lastRectsRef.current.set(key, el.getBoundingClientRect());
         });
-      }, 350);
+      }, duration + 30);
       return () => clearTimeout(timer);
     } else {
       flipRefs.current.forEach((el, key) => {
@@ -230,12 +324,13 @@ export const LeftConfigPanel: React.FC = () => {
         onWheel={handleHeaderWheel}
         onTouchStart={handleHeaderTouchStart}
         onTouchMove={handleHeaderTouchMove}
-        className="shrink-0 bg-white dark:bg-[#0B0F17] transition-all duration-300 ease-in-out border-b border-gray-200 dark:border-gray-800"
+        style={{ '--header-transition-ms': `${DEFAULT_TRANSITION_MS}ms` } as React.CSSProperties}
+        className="shrink-0 bg-white dark:bg-[#0B0F17] transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out border-b border-gray-200 dark:border-gray-800"
       >
         {/* Header Toolbar (Title) - smoothly rolls up in compact mode */}
         <div
           className={clsx(
-            "px-4 border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 transition-all duration-300 ease-in-out overflow-hidden",
+            "px-4 border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30 transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out overflow-hidden",
             isSimplified
               ? "max-h-0 opacity-0 border-b-0 py-0"
               : "h-11 max-h-12 opacity-100 border-b py-0"
@@ -254,7 +349,7 @@ export const LeftConfigPanel: React.FC = () => {
         {/* Pinned Section: 3 logical rows in compact mode, expanded in relaxed mode */}
         <div
           className={clsx(
-            "transition-all duration-300 ease-in-out",
+            "transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out",
             isSimplified ? "p-2.5 space-y-2 shadow-xs" : "p-3.5 space-y-3"
           )}
         >
@@ -263,7 +358,7 @@ export const LeftConfigPanel: React.FC = () => {
             {/* Preset Label (hidden in compact mode) */}
             <div
               className={clsx(
-                "flex items-center justify-between transition-all duration-300 ease-in-out overflow-hidden",
+                "flex items-center justify-between transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out overflow-hidden",
                 isSimplified ? "hidden" : "max-h-6 opacity-100 mb-1"
               )}
             >
@@ -279,7 +374,7 @@ export const LeftConfigPanel: React.FC = () => {
             {/* Row 1 Controls: Preset Select + Reset Btn + Event Name Input */}
             <div
               className={clsx(
-                "flex items-center gap-1.5 transition-all duration-300",
+                "flex items-center gap-1.5 transition-all duration-[var(--header-transition-ms,280ms)]",
                 isSimplified ? "flex-nowrap" : "flex-wrap"
               )}
             >
@@ -289,7 +384,7 @@ export const LeftConfigPanel: React.FC = () => {
                 value={selectedPresetId}
                 onChange={(e) => handlePresetChange(e.target.value)}
                 className={clsx(
-                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-medium text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer transition-all duration-300 truncate",
+                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-medium text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white cursor-pointer transition-all duration-[var(--header-transition-ms,280ms)] truncate",
                   isSimplified ? "flex-1 px-2 py-1" : "flex-1 px-2.5 py-1.5"
                 )}
                 title={t('ui.presetLabel')}
@@ -307,7 +402,7 @@ export const LeftConfigPanel: React.FC = () => {
                 type="button"
                 onClick={handleReset}
                 className={clsx(
-                  "border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-medium text-xs text-gray-700 dark:text-gray-300 transition-all duration-300 shrink-0 cursor-pointer inline-flex items-center justify-center",
+                  "border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-sm font-medium text-xs text-gray-700 dark:text-gray-300 transition-all duration-[var(--header-transition-ms,280ms)] shrink-0 cursor-pointer inline-flex items-center justify-center",
                   isSimplified ? "p-1" : "py-1.5 px-2.5"
                 )}
                 title={t('ui.resetBtn')}
@@ -316,7 +411,7 @@ export const LeftConfigPanel: React.FC = () => {
                 <RotateCcw className="w-3.5 h-3.5 shrink-0 text-gray-500 dark:text-gray-400" />
                 <span
                   className={clsx(
-                    "transition-all duration-300 overflow-hidden whitespace-nowrap inline-block",
+                    "transition-all duration-[var(--header-transition-ms,280ms)] overflow-hidden whitespace-nowrap inline-block",
                     isSimplified ? "max-w-0 opacity-0 ml-0" : "max-w-28 opacity-100 ml-1"
                   )}
                 >
@@ -327,7 +422,7 @@ export const LeftConfigPanel: React.FC = () => {
               {/* Event Identifier Label (hidden in compact mode so it never occupies width in flex-nowrap) */}
               <div
                 className={clsx(
-                  "w-full flex items-center justify-between transition-all duration-300 ease-in-out overflow-hidden",
+                  "w-full flex items-center justify-between transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out overflow-hidden",
                   isSimplified ? "hidden" : "max-h-6 opacity-100 mt-2.5 mb-1"
                 )}
               >
@@ -348,7 +443,7 @@ export const LeftConfigPanel: React.FC = () => {
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 className={clsx(
-                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400 truncate",
+                  "min-w-0 bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm font-mono text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-[var(--header-transition-ms,280ms)] placeholder:text-gray-400 truncate",
                   isSimplified ? "basis-0 flex-1 px-2 py-1" : "basis-full w-full px-2.5 py-1.5"
                 )}
                 placeholder={t('ui.eventNamePlaceholder')}
@@ -363,7 +458,7 @@ export const LeftConfigPanel: React.FC = () => {
             {/* Search Label (hidden in compact mode) */}
             <div
               className={clsx(
-                "flex items-center justify-between transition-all duration-300 ease-in-out overflow-hidden",
+                "flex items-center justify-between transition-all duration-[var(--header-transition-ms,280ms)] ease-in-out overflow-hidden",
                 isSimplified ? "hidden" : "max-h-6 opacity-100 mb-1"
               )}
             >
@@ -382,7 +477,7 @@ export const LeftConfigPanel: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={clsx(
-                "w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-300 placeholder:text-gray-400",
+                "w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-sm text-xs text-gray-900 dark:text-gray-100 outline-hidden focus:border-black dark:focus:border-white transition-all duration-[var(--header-transition-ms,280ms)] placeholder:text-gray-400",
                 isSimplified ? "px-2.5 py-1" : "px-2.5 py-1.5"
               )}
               placeholder={t('ui.searchPlaceholder')}
@@ -393,13 +488,13 @@ export const LeftConfigPanel: React.FC = () => {
           {/* Section 3 / Row 3: Filter Tabs + Expand/Collapse */}
           <div
             className={clsx(
-              "flex transition-all duration-300",
+              "flex transition-all duration-[var(--header-transition-ms,280ms)]",
               isSimplified ? "items-center justify-between gap-2 flex-row" : "flex-col space-y-1.5"
             )}
           >
             <div
               ref={registerFlip('filterTabs')}
-              className={clsx("transition-all duration-300", isSimplified ? "flex-1 min-w-0" : "w-full")}
+              className={clsx("transition-all duration-[var(--header-transition-ms,280ms)]", isSimplified ? "flex-1 min-w-0" : "w-full")}
             >
               {/* Filter Segmented Tabs */}
               <div
@@ -447,7 +542,7 @@ export const LeftConfigPanel: React.FC = () => {
             <div
               ref={registerFlip('expandCollapse')}
               className={clsx(
-                "flex items-center text-[11px] text-gray-500 transition-all duration-300",
+                "flex items-center text-[11px] text-gray-500 transition-all duration-[var(--header-transition-ms,280ms)]",
                 isSimplified ? "shrink-0 gap-1" : "justify-end gap-1.5 pt-0.5"
               )}
             >
