@@ -1,10 +1,8 @@
 import { create } from 'zustand';
-import { produce, enableMapSet } from 'immer';
+import { produce } from 'immer';
 import type { Kv3Diagnostic, Kv3SoundEventDocument } from '../domain/kv3/types';
 import { parseKv3SoundEventDocument } from '../domain/kv3/parser';
 import { validateSoundEventDocument } from '../domain/schema/validation';
-
-enableMapSet();
 
 export type SyncOrigin = 'controls' | 'editor' | 'init' | 'preset';
 

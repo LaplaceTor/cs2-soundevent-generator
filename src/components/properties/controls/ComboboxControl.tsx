@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { type PropertySpec, MIXGROUPS, DSP_PRESETS } from '@/domain/schema/specs';
+import { type PropertySpec } from '@/domain/schema/specs';
 
 interface ComboboxControlProps {
   propKey: string;
@@ -16,15 +16,8 @@ export const ComboboxControl: React.FC<ComboboxControlProps> = ({
   onChange,
 }) => {
   const { t } = useTranslation();
-  let options = spec.options?.objects || [];
-  if (propKey === 'mixgroup') options = MIXGROUPS;
-  else if (propKey === 'dsp_preset') options = DSP_PRESETS;
-
-  const isSelectOnly =
-    spec.kind === 'select' ||
-    propKey === 'vsnd_selection_type' ||
-    propKey === 'dsp_preset' ||
-    propKey === 'mixgroup';
+  const options = spec.options?.objects || [];
+  const isSelectOnly = spec.kind === 'select';
 
   if (isSelectOnly) {
     return (

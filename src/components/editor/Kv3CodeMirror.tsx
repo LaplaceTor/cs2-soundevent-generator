@@ -83,6 +83,10 @@ function createMinimalistTheme(theme: 'dark' | 'light') {
       userSelect: 'none',
       transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
     },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'transparent',
+      color: theme === 'dark' ? '#D1D5DB' : '#111827',
+    },
     '.cm-lineNumbers .cm-gutterElement': {
       paddingRight: '8px',
       textAlign: 'right',

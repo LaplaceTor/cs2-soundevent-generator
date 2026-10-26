@@ -393,26 +393,9 @@
     flex-wrap: nowrap !important;
   }
 
-  /* CodeMirror Dynamic Gutter & Theme Sync */
+  /* CodeMirror Container */
   .cm-editor {
     height: 100%;
-  }
-  .cm-gutters {
-    background-color: rgba(249, 250, 251, 0.7) !important;
-    color: #9CA3AF !important;
-    border-right: 1px solid #F3F4F6 !important;
-    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  }
-  .dark .cm-gutters {
-    background-color: rgba(11, 15, 23, 0.5) !important;
-    color: #4B5563 !important;
-    border-right: 1px solid rgba(31, 41, 55, 0.6) !important;
-  }
-  .cm-activeLineGutter {
-    background-color: transparent !important;
-  }
-  .dark .cm-activeLineGutter {
-    color: #D1D5DB !important;
   }
 
   /* Mobile Drawer Scroll Lock & Containment */

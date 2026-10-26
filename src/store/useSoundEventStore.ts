@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { produce, enableMapSet } from 'immer';
+import { produce } from 'immer';
 
-enableMapSet();
+
 import { DEFAULTS, SPECS, typeNeedsValue } from '../domain/schema/specs';
 import { PRESETS } from '../domain/schema/presets';
 import {
@@ -513,6 +513,7 @@ export const useSoundEventStore = create<SoundEventState>()(
 
       setTheme: (theme) => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.classList.toggle('light', theme === 'light');
         document.documentElement.style.colorScheme = theme;
         set({ theme });
       },
@@ -755,6 +756,7 @@ export const useSoundEventStore = create<SoundEventState>()(
         if (typeof document !== 'undefined') {
           document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
           document.documentElement.classList.toggle('dark', theme === 'dark');
+          document.documentElement.classList.toggle('light', theme === 'light');
           document.documentElement.style.colorScheme = theme;
         }
 
