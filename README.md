@@ -71,11 +71,7 @@ A variety of battle-tested templates to jumpstart your audio design:
    Paste the generated configuration block inside the root `{ ... }` structure and save.
 3. **Place Sound Entity**: In CS2 Hammer Editor, place a sound entity (such as `snd_event_point`).
 4. **Assign Event Name**: In the entity's properties, set **Sound Event Name** to your custom identifier (e.g., `Weapon_Custom.Single`).
-5. **Compile & Test in Game**: Recompile the soundevents file via CS2 Asset Browser or compile your map. Open the CS2 in-game console and type:
-   ```console
-   play <your_soundevent_name>
-   ```
-   to preview your sound immediately!
+5. **Compile & Test in Game**: Recompile the `.vsndevts` file via CS2 Asset Browser and compile your map, load the map in CS2, and trigger the sound entity to hear your custom sound!
 
 ---
 

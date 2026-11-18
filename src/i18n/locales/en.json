@@ -568,7 +568,7 @@
       "Paste into Addon: Open game/csgo_addons/<your_addon>/soundevents/soundevents_addon.vsndevts, paste the code at the bottom, and save.",
       "Place Map Entity: In Hammer, place a sound entity (such as snd_event_point) and set its Sound Event Name property to your event name (for example, Weapon_Custom.Single).",
       "Connect Trigger (Optional): To play the sound from a button (func_button), add an Output: OnPressed -> <Your Sound Entity> -> StartSound.",
-      "Test in Game: Compile your map (or recompile the .vsndevts file in Asset Browser), open the CS2 console, and run play <EventName> to test."
+      "Test in Game: Recompile the .vsndevts file in Asset Browser and compile your map, load the map in CS2, and trigger the sound entity to hear your custom sound."
     ]
   },
   "errors": {

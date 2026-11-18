@@ -568,7 +568,7 @@
       "粘贴保存：打开你的 CS2 插件目录 game/csgo_addons/<你的项目名>/soundevents/soundevents_addon.vsndevts，将代码粘贴到最外层大括号内末尾并保存。",
       "放置地图实体：在 Hammer 地图编辑器中放置一个声音实体（例如 snd_event_point），在属性 Sound Event Name 中填入你的事件名称（如 Weapon_Custom.Single）。",
       "绑定触发（可选）：如果想按按钮播放，在按钮（func_button）的 Outputs 中添加：OnPressed -> <你的声音实体名> -> StartSound。",
-      "进游戏测试：在 Asset Browser 中重新编译 .vsndevts 文件（或直接编译地图），打开 CS2 控制台输入 play <事件名称> 即可立即试听。"
+      "进游戏测试：在 Asset Browser 中重新编译 .vsndevts 文件并编译地图，进入并加载地图后，触发地图中绑定的声音实体即可听到自定义音效。"
     ]
   },
   "errors": {
