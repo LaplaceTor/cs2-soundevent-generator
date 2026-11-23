@@ -18,7 +18,7 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.4",
     "clsx": "^2.1.1",
-    "i18next": "^26.5.12",
+    "i18next": "^27.2.2",
     "immer": "^11.2.10",
     "lucide-react": "^1.72.0",
     "react": "^19.3.1",
